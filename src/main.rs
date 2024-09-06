@@ -25,8 +25,14 @@ use std::thread;
 use time::macros::offset;
 use time::OffsetDateTime;
 
+mod config;
+use config::Settings;
+
 fn main() {
     dotenv().ok();
+
+    // Load configuration
+    let settings = Settings::new().expect("Failed to load configuration");
 
     // Initialize a struct that will be our "global" data, which allows safe access from every thread
     let common_data = SharedData::new(
@@ -82,8 +88,9 @@ fn main() {
     });
 
     let sdclone_2 = sd.clone();
+    let settings_clone = settings.clone();
     thread::spawn(move || {
-        monitor_atmosphere::atmosphere_monitoring(&sdclone_2);
+        monitor_atmosphere::atmosphere_monitoring(&sdclone_2, &settings_clone);
     });
 
     let sdclone_3 = sd.clone();

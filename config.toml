@@ -1,0 +1,15 @@
+[temperature]
+low_range_min = -20.0
+low_range_max = 11.0
+high_range_min = 14.0
+high_range_max = 100.0
+ideal_range_min = 11.0
+ideal_range_max = 14.0
+
+[humidity]
+low_range_min = 0.0
+low_range_max = 60.0
+high_range_min = 80.0
+high_range_max = 100.0
+ideal_range_min = 75.0
+ideal_range_max = 80.0

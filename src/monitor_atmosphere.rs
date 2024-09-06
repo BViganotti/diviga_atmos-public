@@ -8,15 +8,13 @@ use time::format_description;
 use time::macros::offset;
 use time::OffsetDateTime;
 
-const LOW_TEMPERATURE_RANGE: std::ops::Range<f32> = -20.0..11.0;
-const HIGH_TEMPERATURE_RANGE: std::ops::Range<f32> = 14.0..100.0;
-const IDEAL_TEMPERATURE_RANGE: std::ops::Range<f32> = 11.0..14.0;
+use crate::config::Settings;
+use crate::config::{HumiditySettings, TemperatureSettings};
 
-const LOW_HUMIDITY_RANGE: std::ops::Range<f32> = 0.0..60.0;
-const HIGH_HUMIDITY_RANGE: std::ops::Range<f32> = 80.0..100.0;
-const IDEAL_HUMIDITY_RANGE: std::ops::Range<f32> = 75.0..80.00;
+pub fn atmosphere_monitoring(sd: &AccessSharedData, settings: &Settings) {
+    let temp_settings = &settings.temperature;
+    let humidity_settings = &settings.humidity;
 
-pub fn atmosphere_monitoring(sd: &AccessSharedData) {
     loop {
         average_temperature(sd);
         average_humidity(sd);
@@ -26,9 +24,9 @@ pub fn atmosphere_monitoring(sd: &AccessSharedData) {
         // which results in crazy values like -50 degrees, i want to wait
         // for better data before triggering any relays.
         if sd.polling_iterations() > 4 {
-            fridge_control(sd);
+            fridge_control(sd, temp_settings);
             //humidifier_control(&sd);
-            dehumidifier_control(sd);
+            dehumidifier_control(sd, humidity_settings);
         }
 
         debug_data_display(sd);
@@ -37,9 +35,11 @@ pub fn atmosphere_monitoring(sd: &AccessSharedData) {
     }
 }
 
-fn fridge_control(sd: &AccessSharedData) {
+fn fridge_control(sd: &AccessSharedData, temp_settings: &TemperatureSettings) {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
-    if HIGH_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
+    if temp_settings.high_range_min <= sd.average_temp()
+        && sd.average_temp() <= temp_settings.high_range_max
+    {
         println!("fridge_control() -> high temp range");
         if !sd.fridge_status() {
             if now - sd.fridge_turn_off_datetime() < time::Duration::minutes(15) {
@@ -60,7 +60,9 @@ fn fridge_control(sd: &AccessSharedData) {
             }
         }
     // else we don't do anything, the fridge is on
-    } else if IDEAL_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
+    } else if temp_settings.ideal_range_min <= sd.average_temp()
+        && sd.average_temp() <= temp_settings.ideal_range_max
+    {
         println!("fridge_control() -> ideal temp range");
         if sd.fridge_status() {
             if now - sd.fridge_turn_on_datetime() < time::Duration::minutes(30) {
@@ -81,7 +83,7 @@ fn fridge_control(sd: &AccessSharedData) {
                 sd.set_fridge_turn_off_datetime(now);
             }
         }
-    } else if LOW_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
+    } else if sd.average_temp() <= temp_settings.low_range_max {
         println!("fridge_control() -> low temp range");
         if sd.fridge_status() {
             if now - sd.fridge_turn_on_datetime() < time::Duration::minutes(20) {
@@ -105,40 +107,14 @@ fn fridge_control(sd: &AccessSharedData) {
     }
 }
 
-fn humidifier_control(sd: &AccessSharedData) {
-    let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
-    if LOW_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
-        println!("humidifier_control() -> low humidity range");
-        if !sd.humidifier_status() {
-            println!("humidifier_control() -> turning on humidifier !");
-            relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, true)
-                .expect("unable to change relay");
-            sd.set_humidifier_status(true);
-            sd.set_humidifier_turn_on_datetime(now);
-            // in just a few seconds the humidity can reach 100% which isn't what i want
-            // setting a sleep here and turning off the humidifer after a few seconds
-            thread::sleep(Duration::from_secs(3));
-            println!("humidifier_control() -> 3secs passed ! turning off humidifier !");
-            relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false)
-                .expect("unable to change relay");
-            sd.set_humidifier_status(false);
-            sd.set_humidifier_turn_off_datetime(now);
-        }
-    } else if IDEAL_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
-        println!("humidifier_control() -> ideal humidity range");
-        if sd.humidifier_status() {
-            println!("humidifier_control() -> turning off humidifier !");
-            relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false)
-                .expect("unable to change relay");
-            sd.set_humidifier_status(false);
-            sd.set_humidifier_turn_off_datetime(now);
-        }
-    }
-}
+// Remove or comment out the humidifier_control function for now, as it's using the old constants
+// fn humidifier_control(sd: &AccessSharedData) { ... }
 
-fn dehumidifier_control(sd: &AccessSharedData) {
+fn dehumidifier_control(sd: &AccessSharedData, humidity_settings: &HumiditySettings) {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
-    if HIGH_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
+    if humidity_settings.high_range_min <= sd.average_humidity()
+        && sd.average_humidity() <= humidity_settings.high_range_max
+    {
         println!("dehumidifier_control() -> high humidity range");
         if !sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning on dehumidifier");
@@ -147,7 +123,9 @@ fn dehumidifier_control(sd: &AccessSharedData) {
             sd.set_dehumidifier_status(true);
             sd.set_dehumidifier_turn_on_datetime(now);
         }
-    } else if IDEAL_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
+    } else if humidity_settings.ideal_range_min <= sd.average_humidity()
+        && sd.average_humidity() <= humidity_settings.ideal_range_max
+    {
         println!("dehumidifier_control() -> ideal humidity range");
         if sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning off dehumidifier !");
@@ -156,7 +134,7 @@ fn dehumidifier_control(sd: &AccessSharedData) {
             sd.set_dehumidifier_status(false);
             sd.set_dehumidifier_turn_off_datetime(now);
         }
-    } else if LOW_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
+    } else if sd.average_humidity() <= humidity_settings.low_range_max {
         println!("dehumidifier_control() -> low humidity range");
         if sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning off dehumidifier !");

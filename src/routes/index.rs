@@ -2,7 +2,6 @@ use crate::AccessSharedData;
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use time::format_description;
 
-
 fn color_status(status: bool) -> String {
     if status {
         "on".to_owned()

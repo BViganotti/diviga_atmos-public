@@ -19,7 +19,7 @@ pub struct ChangeFridgeStatus {
 
 pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpResponse {
     let prev_fridge_status = sd.fridge_status();
-    let mut res = String::new();
+    let mut _res = String::new();
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
 
     if sd.fridge_status() {
@@ -28,7 +28,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
             // because lowering the temp takes a while
             let wait_time = now - sd.fridge_turn_on_datetime();
             let how_long_to_wait = wait_time.as_seconds_f64() * 60.0;
-            res = format!(
+            _res = format!(
                 "fridge still on, have to wait {} minutes before turn off",
                 how_long_to_wait
             );
@@ -39,7 +39,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
             change_relay_status(RELAY_IN4_PIN_FRIDGE, false).expect("could not change relay");
             sd.set_fridge_status(false);
             sd.set_fridge_turn_off_datetime(now);
-            res = "fridge turned off !".to_owned();
+            _res = "fridge turned off !".to_owned();
         }
     } else if !sd.fridge_status() {
         if now - sd.fridge_turn_off_datetime() < time::Duration::minutes(20) {
@@ -47,7 +47,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
             // because lowering the temp takes a while
             let wait_time = now - sd.fridge_turn_off_datetime();
             let how_long_to_wait = wait_time.as_seconds_f64() * 60.0;
-            res = format!(
+            _res = format!(
                 "fridge still off, have to wait {} minutes before turn on",
                 how_long_to_wait
             );
@@ -58,7 +58,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
             change_relay_status(RELAY_IN4_PIN_FRIDGE, true).expect("could not change relay");
             sd.set_fridge_status(true);
             sd.set_fridge_turn_on_datetime(now);
-            res = "fridge turned on !".to_owned();
+            _res = "fridge turned on !".to_owned();
         }
     }
 
@@ -67,7 +67,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
         new_fridge_status: sd.fridge_status(),
         last_fridge_turn_on: sd.fridge_turn_on_datetime().to_string(),
         last_fridge_turn_off: sd.fridge_turn_off_datetime().to_string(),
-        response: res.to_owned(),
+        response: _res.to_owned(),
     };
     let values = serde_json::to_string(&values).unwrap();
 
