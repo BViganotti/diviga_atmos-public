@@ -55,6 +55,7 @@ async fn main() -> std::io::Result<()> {
         false,
         false,
         false,
+        false, // Add this line for heater_status
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
@@ -92,7 +93,10 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Clone for ventilation task
-    tokio::spawn(ventilation::ventilation_loop());
+    let ventilation_data = shared_data.clone();
+    tokio::spawn(async move {
+        ventilation::ventilation_loop(ventilation_data).await;
+    });
 
     // Clone for atmosphere monitoring task
     let monitoring_data = shared_data.clone();

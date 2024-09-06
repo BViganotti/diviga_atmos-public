@@ -13,6 +13,7 @@ pub struct SharedData {
     atmospheric_quality_index: f32,
     fridge_status: bool,
     humidifier_status: bool,
+    ventilator_status: bool,
     dehumidifier_status: bool,
     heater_status: bool,
     last_reading_time: OffsetDateTime,
@@ -38,6 +39,7 @@ impl SharedData {
         atmospheric_quality_index: f32,
         fridge_status: bool,
         humidifier_status: bool,
+        ventilator_status: bool,
         dehumidifier_status: bool,
         heater_status: bool,
         last_reading_time: OffsetDateTime,
@@ -61,6 +63,7 @@ impl SharedData {
             atmospheric_quality_index,
             fridge_status,
             humidifier_status,
+            ventilator_status,
             dehumidifier_status,
             heater_status,
             last_reading_time,
@@ -234,6 +237,15 @@ impl AccessSharedData {
     pub fn set_humidifier_turn_on_datetime(&self, dt: OffsetDateTime) {
         let mut lock = self.sd.lock().unwrap();
         lock.humidifier_turn_on_datetime = dt;
+    }
+
+    pub fn ventilator_status(&self) -> bool {
+        let lock = self.sd.lock().unwrap();
+        lock.ventilator_status
+    }
+    pub fn set_ventilator_status(&self, new_val: bool) {
+        let mut lock = self.sd.lock().unwrap();
+        lock.ventilator_status = new_val;
     }
 
     pub fn humidifier_turn_off_datetime(&self) -> OffsetDateTime {

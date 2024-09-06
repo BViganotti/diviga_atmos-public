@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,10 +13,14 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f4f4f4;
         }
-        h1, h2 {
+
+        h1,
+        h2 {
             color: #2c3e50;
         }
+
         .data-section {
             background-color: #f9f9f9;
             border: 1px solid #ddd;
@@ -23,15 +28,19 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+
         .data-item {
             margin-bottom: 10px;
         }
+
         .label {
             font-weight: bold;
         }
+
         .value {
             color: #2980b9;
         }
+
         .status {
             display: inline-block;
             padding: 3px 8px;
@@ -40,14 +49,17 @@
             font-size: 0.8em;
             font-weight: bold;
         }
+
         .on {
             background-color: #2ecc71;
             color: white;
         }
+
         .off {
             background-color: #e74c3c;
             color: white;
         }
+
         footer {
             margin-top: 40px;
             text-align: center;
@@ -56,9 +68,10 @@
         }
     </style>
 </head>
+
 <body>
     <h1>Atmospheric Control System</h1>
-    
+
     <div class="data-section">
         <h2>Current Atmospheric Data</h2>
         <div class="data-item">
@@ -107,7 +120,8 @@
         <h2>Humidity Control</h2>
         <div class="data-item">
             <span class="label">Humidifier:</span>
-            <span class="status {{ 'on' if humidifier_status else 'off' }}">{{ 'on' if humidifier_status else 'off' }}</span>
+            <span class="status {{ 'on' if humidifier_status else 'off' }}">{{ 'on' if humidifier_status else 'off'
+                }}</span>
         </div>
         <div class="data-item">
             <span class="label">Last ON:</span>
@@ -119,7 +133,8 @@
         </div>
         <div class="data-item">
             <span class="label">Dehumidifier:</span>
-            <span class="status {{ 'on' if dehumidifier_status else 'off' }}">{{ 'on' if dehumidifier_status else 'off' }}</span>
+            <span class="status {{ 'on' if dehumidifier_status else 'off' }}">{{ 'on' if dehumidifier_status else 'off'
+                }}</span>
         </div>
         <div class="data-item">
             <span class="label">Last ON:</span>
@@ -135,4 +150,5 @@
         <p>&copy; DIVIGA 2023-Eternity. All rights reserved.</p>
     </footer>
 </body>
+
 </html>
