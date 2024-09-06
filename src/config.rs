@@ -1,4 +1,5 @@
-use config::{Config, ConfigError, File};
+use crate::error::AtmosError;
+use config::{Config, File};
 use serde::Deserialize;
 use std::fmt;
 
@@ -29,7 +30,7 @@ pub struct HumiditySettings {
 }
 
 impl Settings {
-    pub fn new() -> Result<Self, ConfigError> {
+    pub fn new() -> Result<Self, AtmosError> {
         let s = Config::builder()
             .add_source(File::with_name("config"))
             .build()?;
@@ -39,7 +40,7 @@ impl Settings {
         Ok(settings)
     }
 
-    fn validate(&self) -> Result<(), ConfigError> {
+    fn validate(&self) -> Result<(), AtmosError> {
         self.temperature.validate()?;
         self.humidity.validate()?;
         Ok(())
@@ -47,28 +48,32 @@ impl Settings {
 }
 
 impl TemperatureSettings {
-    fn validate(&self) -> Result<(), ConfigError> {
+    fn validate(&self) -> Result<(), AtmosError> {
         if !(self.low_range_min <= self.low_range_max
             && self.low_range_max < self.ideal_range_min
             && self.ideal_range_min <= self.ideal_range_max
             && self.ideal_range_max < self.high_range_min
             && self.high_range_min <= self.high_range_max)
         {
-            return Err(ConfigError::Message("Invalid temperature ranges".into()));
+            return Err(AtmosError::ConfigError(config::ConfigError::Message(
+                "Invalid temperature ranges".into(),
+            )));
         }
         Ok(())
     }
 }
 
 impl HumiditySettings {
-    fn validate(&self) -> Result<(), ConfigError> {
+    fn validate(&self) -> Result<(), AtmosError> {
         if !(self.low_range_min <= self.low_range_max
             && self.low_range_max < self.ideal_range_min
             && self.ideal_range_min <= self.ideal_range_max
             && self.ideal_range_max < self.high_range_min
             && self.high_range_min <= self.high_range_max)
         {
-            return Err(ConfigError::Message("Invalid humidity ranges".into()));
+            return Err(AtmosError::ConfigError(config::ConfigError::Message(
+                "Invalid humidity ranges".into(),
+            )));
         }
         Ok(())
     }

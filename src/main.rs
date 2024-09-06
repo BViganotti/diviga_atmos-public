@@ -2,6 +2,8 @@
 This project is very very much influenced and heavily copy pasted from https://github.com/mikehentges/thermostat-pi.
 */
 
+pub mod config;
+pub mod error;
 pub mod monitor_atmosphere;
 pub mod read_atmosphere;
 pub mod relay_ctrl;
@@ -25,11 +27,18 @@ use std::thread;
 use time::macros::offset;
 use time::OffsetDateTime;
 
-mod config;
-use config::Settings;
+use crate::config::Settings;
 
-fn main() {
+mod influx_client;
+use influx_client::InfluxClient;
+
+use crate::request_atmosphere::request_atmosphere;
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     dotenv().ok();
+    env_logger::init();
+    log::info!("Starting atmospheric control system");
 
     // Load configuration
     let settings = Settings::new().expect("Failed to load configuration");
@@ -79,8 +88,12 @@ fn main() {
     // and updates the SharedData::current_temp value.
     let sdclone_1 = sd.clone();
 
-    let handle = thread::spawn(move || {
-        request_atmosphere::request_atmosphere(&sdclone_1);
+    let influx_client = InfluxClient::new("http://localhost:8086", "atmosphere_db");
+    let sdclone_1 = sd.clone();
+    let influx_client_clone = influx_client.clone();
+
+    let handle = tokio::spawn(async move {
+        request_atmosphere(&sdclone_1, &influx_client_clone).await;
     });
 
     thread::spawn(move || {
@@ -99,5 +112,7 @@ fn main() {
         rt::System::new().block_on(server_future)
     });
 
-    let _ = handle.join();
+    handle.await?;
+
+    Ok(())
 }

@@ -1,4 +1,6 @@
 use actix_web::{web, App, HttpServer};
+use log::{error, info, warn};
+use tera::Tera;
 
 use crate::routes::atmosphere::get_atmosphere;
 use crate::routes::get_full_atmospheric_data;
@@ -13,12 +15,17 @@ use crate::routes::relay_status::get_humidifier_status;
 use crate::AccessSharedData;
 
 pub async fn run_app(sd: &AccessSharedData) -> std::io::Result<()> {
+    info!("Starting HTTP server at http://localhost:8080");
     println!("starting HTTP server at http://localhost:8080");
     let common_data = web::Data::new(sd.clone());
+
+    let tera = Tera::new("templates/**/*").expect("Failed to initialize Tera");
+    let tera_data = web::Data::new(tera);
 
     let server = HttpServer::new(move || {
         App::new()
             .app_data(common_data.clone())
+            .app_data(tera_data.clone())
             .route("/get_atmosphere", web::get().to(get_atmosphere))
             .route(
                 "/get_full_atmospheric_data",

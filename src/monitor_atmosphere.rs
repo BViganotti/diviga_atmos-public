@@ -1,8 +1,10 @@
 use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
+use log::{error, info, warn};
 use std::{thread, time::Duration};
 
 pub fn atmosphere_monitoring(sd: &AccessSharedData, settings: &Settings) {
+    info!("Starting atmosphere monitoring");
     loop {
         update_average_values(sd);
         update_atmosphere_quality_index(sd, settings);
@@ -11,6 +13,11 @@ pub fn atmosphere_monitoring(sd: &AccessSharedData, settings: &Settings) {
             control_environment(sd, settings);
         }
 
+        info!(
+            "Current atmosphere - Temp: {:.2}°C, Humidity: {:.2}%",
+            sd.average_temp(),
+            sd.average_humidity()
+        );
         thread::sleep(Duration::from_secs(60));
     }
 }

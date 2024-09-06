@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atmospheric Control System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .data-section {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .data-item {
+            margin-bottom: 10px;
+        }
+        .label {
+            font-weight: bold;
+        }
+        .value {
+            color: #2980b9;
+        }
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .on {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .off {
+            background-color: #e74c3c;
+            color: white;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Atmospheric Control System</h1>
+    
+    <div class="data-section">
+        <h2>Current Atmospheric Data</h2>
+        <div class="data-item">
+            <span class="label">Average Temperature:</span>
+            <span class="value">{{ average_temp | round(precision=1) }}°C</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Average Humidity:</span>
+            <span class="value">{{ average_humidity | round(precision=1) }}%RH</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last Reading Time:</span>
+            <span class="value">{{ last_reading_time }}</span>
+        </div>
+    </div>
+
+    <div class="data-section">
+        <h2>Sensor Readings</h2>
+        <div class="data-item">
+            <span class="label">Sensor 1:</span>
+            <span class="value">{{ temp_one | round(precision=1) }}°C, {{ humidity_one | round(precision=1) }}%RH</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Sensor 2:</span>
+            <span class="value">{{ temp_two | round(precision=1) }}°C, {{ humidity_two | round(precision=1) }}%RH</span>
+        </div>
+    </div>
+
+    <div class="data-section">
+        <h2>Equipment Status</h2>
+        <div class="data-item">
+            <span class="label">Fridge:</span>
+            <span class="status {{ 'on' if fridge_status else 'off' }}">{{ 'on' if fridge_status else 'off' }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last ON:</span>
+            <span class="value">{{ fridge_turn_on_datetime }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last OFF:</span>
+            <span class="value">{{ fridge_turn_off_datetime }}</span>
+        </div>
+    </div>
+
+    <div class="data-section">
+        <h2>Humidity Control</h2>
+        <div class="data-item">
+            <span class="label">Humidifier:</span>
+            <span class="status {{ 'on' if humidifier_status else 'off' }}">{{ 'on' if humidifier_status else 'off' }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last ON:</span>
+            <span class="value">{{ humidifier_turn_on_datetime }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last OFF:</span>
+            <span class="value">{{ humidifier_turn_off_datetime }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Dehumidifier:</span>
+            <span class="status {{ 'on' if dehumidifier_status else 'off' }}">{{ 'on' if dehumidifier_status else 'off' }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last ON:</span>
+            <span class="value">{{ dehumidifier_turn_on_datetime }}</span>
+        </div>
+        <div class="data-item">
+            <span class="label">Last OFF:</span>
+            <span class="value">{{ dehumidifier_turn_off_datetime }}</span>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; DIVIGA 2023-Eternity. All rights reserved.</p>
+    </footer>
+</body>
+</html>
