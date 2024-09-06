@@ -100,7 +100,7 @@ impl AccessSharedData {
     }
     pub fn increment_polling_iterations(&self) {
         let mut lock = self.sd.lock().unwrap();
-        lock.polling_iterations = lock.polling_iterations + 1;
+        lock.polling_iterations += 1;
     }
 
     pub fn temp_one(&self) -> f32 {

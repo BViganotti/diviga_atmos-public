@@ -18,20 +18,20 @@ const IDEAL_HUMIDITY_RANGE: std::ops::Range<f32> = 75.0..80.00;
 
 pub fn atmosphere_monitoring(sd: &AccessSharedData) {
     loop {
-        average_temperature(&sd);
-        average_humidity(&sd);
-        atmosphere_quality_index(&sd);
+        average_temperature(sd);
+        average_humidity(sd);
+        atmosphere_quality_index(sd);
 
         // the first 4 iterations the sensors often are badly calibrated
         // which results in crazy values like -50 degrees, i want to wait
         // for better data before triggering any relays.
         if sd.polling_iterations() > 4 {
-            fridge_control(&sd);
+            fridge_control(sd);
             //humidifier_control(&sd);
-            dehumidifier_control(&sd);
+            dehumidifier_control(sd);
         }
 
-        debug_data_display(&sd);
+        debug_data_display(sd);
 
         thread::sleep(Duration::from_secs(60));
     }
@@ -41,7 +41,7 @@ fn fridge_control(sd: &AccessSharedData) {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     if HIGH_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
         println!("fridge_control() -> high temp range");
-        if sd.fridge_status() == false {
+        if !sd.fridge_status() {
             if now - sd.fridge_turn_off_datetime() < time::Duration::minutes(15) {
                 // we wait and do nothing, we don't want to burn the compressor
                 let wait_time = now - sd.fridge_turn_on_datetime();
@@ -62,7 +62,7 @@ fn fridge_control(sd: &AccessSharedData) {
     // else we don't do anything, the fridge is on
     } else if IDEAL_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
         println!("fridge_control() -> ideal temp range");
-        if sd.fridge_status() == true {
+        if sd.fridge_status() {
             if now - sd.fridge_turn_on_datetime() < time::Duration::minutes(30) {
                 // we might be just entering the ideal range so we also wait 30 minutes
                 // because lowering the temp takes a while
@@ -83,7 +83,7 @@ fn fridge_control(sd: &AccessSharedData) {
         }
     } else if LOW_TEMPERATURE_RANGE.contains(&sd.average_temp()) {
         println!("fridge_control() -> low temp range");
-        if sd.fridge_status() == true {
+        if sd.fridge_status() {
             if now - sd.fridge_turn_on_datetime() < time::Duration::minutes(20) {
                 // we might be just entering the ideal range so we also wait 20 minutes
                 // because lowering the temp takes a while
@@ -109,7 +109,7 @@ fn humidifier_control(sd: &AccessSharedData) {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     if LOW_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
         println!("humidifier_control() -> low humidity range");
-        if sd.humidifier_status() != true {
+        if !sd.humidifier_status() {
             println!("humidifier_control() -> turning on humidifier !");
             relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, true)
                 .expect("unable to change relay");
@@ -126,7 +126,7 @@ fn humidifier_control(sd: &AccessSharedData) {
         }
     } else if IDEAL_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
         println!("humidifier_control() -> ideal humidity range");
-        if sd.humidifier_status() == true {
+        if sd.humidifier_status() {
             println!("humidifier_control() -> turning off humidifier !");
             relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false)
                 .expect("unable to change relay");
@@ -140,7 +140,7 @@ fn dehumidifier_control(sd: &AccessSharedData) {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     if HIGH_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
         println!("dehumidifier_control() -> high humidity range");
-        if sd.dehumidifier_status() != true {
+        if !sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning on dehumidifier");
             relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, true)
                 .expect("unable to change relay");
@@ -149,7 +149,7 @@ fn dehumidifier_control(sd: &AccessSharedData) {
         }
     } else if IDEAL_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
         println!("dehumidifier_control() -> ideal humidity range");
-        if sd.dehumidifier_status() == true {
+        if sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning off dehumidifier !");
             relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, false)
                 .expect("unable to change relay");
@@ -158,7 +158,7 @@ fn dehumidifier_control(sd: &AccessSharedData) {
         }
     } else if LOW_HUMIDITY_RANGE.contains(&sd.average_humidity()) {
         println!("dehumidifier_control() -> low humidity range");
-        if sd.dehumidifier_status() == true {
+        if sd.dehumidifier_status() {
             println!("dehumidifier_control() -> turning off dehumidifier !");
             relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, false)
                 .expect("unable to change relay");

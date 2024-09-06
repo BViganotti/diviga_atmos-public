@@ -2,7 +2,6 @@ use crate::AccessSharedData;
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use time::format_description;
 
-use super::relay_control::change_fridge_status;
 
 fn color_status(status: bool) -> String {
     if status {

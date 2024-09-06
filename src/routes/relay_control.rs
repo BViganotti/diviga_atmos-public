@@ -22,7 +22,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
     let mut res = String::new();
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
 
-    if sd.fridge_status() == true {
+    if sd.fridge_status() {
         if now - sd.fridge_turn_on_datetime() < time::Duration::minutes(20) {
             // we might be just entering the ideal range so we also wait 20 minutes
             // because lowering the temp takes a while
@@ -41,7 +41,7 @@ pub async fn change_fridge_status(sd: web::Data<AccessSharedData>) -> HttpRespon
             sd.set_fridge_turn_off_datetime(now);
             res = "fridge turned off !".to_owned();
         }
-    } else if sd.fridge_status() == false {
+    } else if !sd.fridge_status() {
         if now - sd.fridge_turn_off_datetime() < time::Duration::minutes(20) {
             // we might be just entering the ideal range so we also wait 20 minutes
             // because lowering the temp takes a while
@@ -88,7 +88,7 @@ pub async fn trigger_humidifier(sd: web::Data<AccessSharedData>) -> HttpResponse
     let mut res = String::new();
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
 
-    if sd.humidifier_status() != true {
+    if !sd.humidifier_status() {
         change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, true).expect("unable to change relay");
         sd.set_humidifier_status(true);
         sd.set_humidifier_turn_on_datetime(now);
@@ -128,7 +128,7 @@ pub async fn change_dehumidifier_status(sd: web::Data<AccessSharedData>) -> Http
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     let prev_status = sd.dehumidifier_status();
 
-    if sd.dehumidifier_status() != true {
+    if !sd.dehumidifier_status() {
         change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, true).expect("unable to change relay");
         sd.set_dehumidifier_status(true);
         sd.set_dehumidifier_turn_on_datetime(now);

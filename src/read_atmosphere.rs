@@ -15,7 +15,7 @@ fn get_atmosphere_from_sensor() -> String {
     let str_output: String = String::from_utf8_lossy(&output.stdout).to_string();
     println!("{}", str_output);
 
-    return str_output;
+    str_output
 }
 
 pub fn read_atmosphere_from_sensors(sd: &AccessSharedData) {
