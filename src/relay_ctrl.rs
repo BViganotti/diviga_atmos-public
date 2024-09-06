@@ -2,7 +2,7 @@
 // on demand.
 
 use crate::error::AtmosError;
-use log::{error, info, warn};
+use log::info;
 use rppal::gpio::Gpio;
 
 pub const RELAY_IN1_PIN_HUMIDIFIER: u8 = 14;

@@ -1,5 +1,5 @@
 use actix_web::{web, App, HttpServer};
-use log::{error, info, warn};
+use log::info;
 use tera::Tera;
 
 use crate::routes::atmosphere::get_atmosphere;

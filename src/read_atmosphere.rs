@@ -1,7 +1,7 @@
 use crate::error::AtmosError;
 use crate::influx_client::InfluxClient;
 use crate::shared_data::AccessSharedData;
-use log::{error, info, warn};
+use log::info;
 use serde_json::Value;
 use std::process::Command;
 use std::thread;

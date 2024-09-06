@@ -1,16 +1,17 @@
 use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
-use log::{error, info, warn};
-use std::{thread, time::Duration};
+use log::info;
+use std::time::Duration;
+use tokio::time::sleep;
 
-pub fn atmosphere_monitoring(sd: &AccessSharedData, settings: &Settings) {
+pub async fn atmosphere_monitoring(sd: AccessSharedData, settings: Settings) {
     info!("Starting atmosphere monitoring");
     loop {
-        update_average_values(sd);
-        update_atmosphere_quality_index(sd, settings);
+        update_average_values(&sd);
+        update_atmosphere_quality_index(&sd, &settings);
 
         if sd.polling_iterations() > 4 {
-            control_environment(sd, settings);
+            control_environment(&sd, &settings);
         }
 
         info!(
@@ -18,7 +19,7 @@ pub fn atmosphere_monitoring(sd: &AccessSharedData, settings: &Settings) {
             sd.average_temp(),
             sd.average_humidity()
         );
-        thread::sleep(Duration::from_secs(60));
+        sleep(Duration::from_secs(60)).await;
     }
 }
 

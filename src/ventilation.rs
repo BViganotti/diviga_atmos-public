@@ -15,9 +15,9 @@ fn trigger_ventilator() {
         .expect("unable to change relay");
 }
 
-pub fn ventilation_loop() {
+pub async fn ventilation_loop() {
     loop {
         trigger_ventilator();
-        thread::sleep(Duration::from_secs(HALF_HOURS));
+        tokio::time::sleep(tokio::time::Duration::from_secs(HALF_HOURS)).await;
     }
 }

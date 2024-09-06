@@ -19,11 +19,9 @@ use crate::relay_ctrl::{
 };
 use crate::shared_data::AccessSharedData;
 use crate::shared_data::SharedData;
-use actix_web::rt;
 use dotenv::dotenv;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::thread;
 use time::macros::offset;
 use time::OffsetDateTime;
 
@@ -79,40 +77,38 @@ async fn main() -> std::io::Result<()> {
         .expect("unable to initialize relay");
 
     // The wrapper around our shared data that gives it safe access across threads
-    let sd = AccessSharedData {
+    let shared_data = AccessSharedData {
         sd: Arc::new(Mutex::new(common_data)),
     };
 
-    // We are cloning the pointer to our shared data, and sending it into
-    // a new thread that continuously reads the temperature from our sensor,
-    // and updates the SharedData::current_temp value.
-    let sdclone_1 = sd.clone();
-
     let influx_client = InfluxClient::new("http://localhost:8086", "atmosphere_db");
-    let sdclone_1 = sd.clone();
-    let influx_client_clone = influx_client.clone();
 
-    let handle = tokio::spawn(async move {
-        request_atmosphere(&sdclone_1, &influx_client_clone).await;
+    // Clone for atmosphere request task
+    let atmosphere_data = shared_data.clone();
+    let atmosphere_influx_client = influx_client.clone();
+
+    let atmosphere_handle = tokio::spawn(async move {
+        request_atmosphere(&atmosphere_data, &atmosphere_influx_client).await;
     });
 
-    thread::spawn(move || {
-        ventilation::ventilation_loop();
+    // Clone for ventilation task
+    tokio::spawn(ventilation::ventilation_loop());
+
+    // Clone for atmosphere monitoring task
+    let monitoring_data = shared_data.clone();
+    let monitoring_settings = settings.clone();
+    tokio::spawn(async move {
+        monitor_atmosphere::atmosphere_monitoring(monitoring_data, monitoring_settings).await;
     });
 
-    let sdclone_2 = sd.clone();
-    let settings_clone = settings.clone();
-    thread::spawn(move || {
-        monitor_atmosphere::atmosphere_monitoring(&sdclone_2, &settings_clone);
+    // Clone for webserver task
+    let webserver_data = shared_data.clone();
+    tokio::spawn(async move {
+        let server_future = webserver::run_app(&webserver_data);
+        server_future.await
     });
 
-    let sdclone_3 = sd.clone();
-    thread::spawn(move || {
-        let server_future = webserver::run_app(&sdclone_3);
-        rt::System::new().block_on(server_future)
-    });
-
-    handle.await?;
+    atmosphere_handle.await?;
 
     Ok(())
 }
