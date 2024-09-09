@@ -68,14 +68,16 @@ async fn main() -> std::io::Result<()> {
     );
 
     // setting all the pins to false just in case
-    relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false)
-        .expect("unable to initialize relay");
-    relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, false)
-        .expect("unable to initialize relay");
-    relay_ctrl::change_relay_status(RELAY_IN3_PIN_VENTILATOR_OR_HEATER, false)
-        .expect("unable to initialize relay");
-    relay_ctrl::change_relay_status(RELAY_IN4_PIN_FRIDGE, false)
-        .expect("unable to initialize relay");
+    for pin in &[
+        RELAY_IN1_PIN_HUMIDIFIER,
+        RELAY_IN2_PIN_DEHUMIDIFIER,
+        RELAY_IN3_PIN_VENTILATOR_OR_HEATER,
+        RELAY_IN4_PIN_FRIDGE,
+    ] {
+        relay_ctrl::change_relay_status(*pin, false)
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    }
 
     // The wrapper around our shared data that gives it safe access across threads
     let shared_data = AccessSharedData {
@@ -102,7 +104,11 @@ async fn main() -> std::io::Result<()> {
     let monitoring_data = shared_data.clone();
     let monitoring_settings = settings.clone();
     tokio::spawn(async move {
-        monitor_atmosphere::atmosphere_monitoring(monitoring_data, monitoring_settings).await;
+        if let Err(e) =
+            monitor_atmosphere::atmosphere_monitoring(monitoring_data, monitoring_settings).await
+        {
+            log::error!("Atmosphere monitoring error: {}", e);
+        }
     });
 
     // Clone for webserver task

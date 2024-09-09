@@ -5,8 +5,9 @@ use crate::relay_ctrl::{
 use crate::AccessSharedData;
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use serde::Serialize;
-use std::{thread, time::Duration};
+//use std::{thread, time::Duration};
 use time::{macros::offset, OffsetDateTime};
+use tokio::time::Duration;
 
 #[derive(Serialize)]
 struct RelayResponse<T> {
@@ -42,10 +43,16 @@ async fn change_relay_status(
                 wait_time.as_seconds_f64() / 60.0
             );
         } else {
-            relay_status_change(relay_pin, false).expect("Could not change relay");
-            set_status(sd, false);
-            set_turn_off(sd, now);
-            response = "Turned off".to_string();
+            match relay_status_change(relay_pin, false).await {
+                Ok(_) => {
+                    set_status(sd, false);
+                    set_turn_off(sd, now);
+                    response = "Turned off".to_string();
+                }
+                Err(e) => {
+                    response = format!("Error turning off: {}", e);
+                }
+            }
         }
     } else {
         if now - get_turn_off(sd) < min_wait_time {
@@ -55,10 +62,16 @@ async fn change_relay_status(
                 wait_time.as_seconds_f64() / 60.0
             );
         } else {
-            relay_status_change(relay_pin, true).expect("Could not change relay");
-            set_status(sd, true);
-            set_turn_on(sd, now);
-            response = "Turned on".to_string();
+            match relay_status_change(relay_pin, true).await {
+                Ok(_) => {
+                    set_status(sd, true);
+                    set_turn_on(sd, now);
+                    response = "Turned on".to_string();
+                }
+                Err(e) => {
+                    response = format!("Error turning on: {}", e);
+                }
+            }
         }
     }
 
@@ -104,14 +117,26 @@ pub async fn trigger_humidifier(sd: web::Data<AccessSharedData>) -> HttpResponse
     let mut response = String::new();
 
     if !sd.humidifier_status() {
-        relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, true).expect("Unable to change relay");
-        sd.set_humidifier_status(true);
-        sd.set_humidifier_turn_on_datetime(now);
-        thread::sleep(Duration::from_secs(3));
-        relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, false).expect("Unable to change relay");
-        sd.set_humidifier_status(false);
-        sd.set_humidifier_turn_off_datetime(now);
-        response = "Humidifier turned on and off for 3 secs".to_string();
+        match relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, true).await {
+            Ok(_) => {
+                sd.set_humidifier_status(true);
+                sd.set_humidifier_turn_on_datetime(now);
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                match relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, false).await {
+                    Ok(_) => {
+                        sd.set_humidifier_status(false);
+                        sd.set_humidifier_turn_off_datetime(now);
+                        response = "Humidifier turned on and off for 1 sec".to_string();
+                    }
+                    Err(e) => {
+                        response = format!("Error turning off humidifier: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                response = format!("Error turning on humidifier: {}", e);
+            }
+        }
     }
 
     let response = HumidifierResponse {

@@ -10,7 +10,7 @@ pub const RELAY_IN2_PIN_DEHUMIDIFIER: u8 = 15;
 pub const RELAY_IN3_PIN_VENTILATOR_OR_HEATER: u8 = 18;
 pub const RELAY_IN4_PIN_FRIDGE: u8 = 17;
 
-pub fn change_relay_status(pin_number: u8, relay_status: bool) -> Result<(), AtmosError> {
+pub async fn change_relay_status(pin_number: u8, relay_status: bool) -> Result<(), AtmosError> {
     let mut pin = Gpio::new()?
         .get(pin_number)
         .map_err(|_| AtmosError::RelayControlError(format!("Can't get pin {}", pin_number)))?

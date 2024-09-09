@@ -4,14 +4,14 @@ use crate::shared_data::AccessSharedData;
 use log::info;
 use serde_json::Value;
 use std::process::Command;
-use std::thread;
-use std::time::Duration;
+//use std::thread;
+//use std::time::Duration;
 use time::macros::offset;
 use time::OffsetDateTime;
+use tokio::time::Duration;
 
 fn get_atmosphere_from_sensor() -> Result<String, AtmosError> {
     let output = Command::new("python3").arg("dht.py").output()?;
-
     let str_output = String::from_utf8_lossy(&output.stdout).to_string();
     println!("{}", str_output);
     info!("Sensor output: {}", str_output);
@@ -31,7 +31,7 @@ pub async fn read_atmosphere_from_sensors(
     loop {
         if v.get("error").is_some() {
             if current_tries < MAX_RETRIES {
-                thread::sleep(Duration::from_secs(4));
+                tokio::time::sleep(Duration::from_secs(4)).await;
                 output = get_atmosphere_from_sensor()?;
                 v = serde_json::from_str(&output)?;
                 current_tries += 1;

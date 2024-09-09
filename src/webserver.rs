@@ -19,7 +19,8 @@ pub async fn run_app(sd: &AccessSharedData) -> std::io::Result<()> {
     println!("starting HTTP server at http://localhost:8080");
     let common_data = web::Data::new(sd.clone());
 
-    let tera = Tera::new("templates/**/*").expect("Failed to initialize Tera");
+    let tera = Tera::new("templates/**/*")
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     let tera_data = web::Data::new(tera);
 
     let server = HttpServer::new(move || {
