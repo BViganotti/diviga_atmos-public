@@ -1,6 +1,8 @@
 use crate::config::Settings;
 use crate::relay_ctrl;
-use crate::relay_ctrl::{RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN4_PIN_FRIDGE};
+use crate::relay_ctrl::{
+    RELAY_IN1_PIN_HUMIDIFIER, RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN4_PIN_FRIDGE,
+};
 use crate::shared_data::AccessSharedData;
 use log::{info, warn};
 use std::time::Duration;
@@ -8,6 +10,8 @@ use time::OffsetDateTime;
 use tokio::time::sleep;
 
 const FRIDGE_COOLDOWN_DURATION: Duration = Duration::from_secs(20 * 60); // 20 minutes
+const HUMIDIFIER_COOLDOWN_DURATION: Duration = Duration::from_secs(10 * 60); // 10 minutes
+const HUMIDIFIER_ACTIVATION_DURATION: Duration = Duration::from_secs(1); // 1 second
 
 pub async fn atmosphere_monitoring(sd: AccessSharedData, settings: Settings) {
     info!("Starting atmosphere monitoring");
@@ -16,7 +20,9 @@ pub async fn atmosphere_monitoring(sd: AccessSharedData, settings: Settings) {
         update_atmosphere_quality_index(&sd, &settings);
 
         if sd.polling_iterations() > 4 {
-            control_environment(&sd, &settings);
+            fridge_control(&sd, &settings);
+            dehumidifier_control(&sd, &settings);
+            humidifier_control(&sd, &settings);
         }
 
         info!(
@@ -34,10 +40,14 @@ fn update_average_values(sd: &AccessSharedData) {
 }
 
 fn update_atmosphere_quality_index(sd: &AccessSharedData, settings: &Settings) {
-    let temp_in_range = settings.temperature.ideal_range_min <= sd.average_temp()
-        && sd.average_temp() <= settings.temperature.ideal_range_max;
-    let humidity_in_range = settings.humidity.ideal_range_min <= sd.average_humidity()
-        && sd.average_humidity() <= settings.humidity.ideal_range_max;
+    let temp_in_range = settings
+        .temperature
+        .ideal_range
+        .contains(&sd.average_temp());
+    let humidity_in_range = settings
+        .humidity
+        .ideal_range
+        .contains(&sd.average_humidity());
 
     sd.set_atmosphere_quality_index(if temp_in_range && humidity_in_range {
         100.0
@@ -46,12 +56,12 @@ fn update_atmosphere_quality_index(sd: &AccessSharedData, settings: &Settings) {
     });
 }
 
-fn control_environment(sd: &AccessSharedData, settings: &Settings) {
+fn fridge_control(sd: &AccessSharedData, settings: &Settings) {
     let current_time = OffsetDateTime::now_utc();
     let time_since_last_change = current_time - sd.fridge_turn_off_datetime();
 
     if time_since_last_change >= FRIDGE_COOLDOWN_DURATION {
-        if sd.average_temp() > settings.temperature.high_range_min {
+        if settings.temperature.high_range.contains(&sd.average_temp()) {
             if !sd.fridge_status() {
                 info!("Turning fridge ON");
                 if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN4_PIN_FRIDGE, true) {
@@ -61,7 +71,7 @@ fn control_environment(sd: &AccessSharedData, settings: &Settings) {
                     sd.set_fridge_turn_on_datetime(current_time);
                 }
             }
-        } else if sd.average_temp() < settings.temperature.low_range_max {
+        } else if settings.temperature.low_range.contains(&sd.average_temp()) {
             if sd.fridge_status() {
                 info!("Turning fridge OFF");
                 if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN4_PIN_FRIDGE, false) {
@@ -75,9 +85,14 @@ fn control_environment(sd: &AccessSharedData, settings: &Settings) {
     } else {
         info!("Fridge status change prevented due to cooldown period");
     }
+}
 
-    // Dehumidifier control (no cooldown period)
-    if sd.average_humidity() > settings.humidity.high_range_min {
+fn dehumidifier_control(sd: &AccessSharedData, settings: &Settings) {
+    if settings
+        .humidity
+        .high_range
+        .contains(&sd.average_humidity())
+    {
         if !sd.dehumidifier_status() {
             info!("Turning dehumidifier ON");
             if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, true) {
@@ -86,7 +101,7 @@ fn control_environment(sd: &AccessSharedData, settings: &Settings) {
                 sd.set_dehumidifier_status(true);
             }
         }
-    } else if sd.average_humidity() < settings.humidity.low_range_max {
+    } else if settings.humidity.low_range.contains(&sd.average_humidity()) {
         if sd.dehumidifier_status() {
             info!("Turning dehumidifier OFF");
             if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN2_PIN_DEHUMIDIFIER, false) {
@@ -95,5 +110,28 @@ fn control_environment(sd: &AccessSharedData, settings: &Settings) {
                 sd.set_dehumidifier_status(false);
             }
         }
+    }
+}
+
+fn humidifier_control(sd: &AccessSharedData, settings: &Settings) {
+    let current_time = OffsetDateTime::now_utc();
+    let time_since_last_humidifier_activation = current_time - sd.humidifier_turn_off_datetime();
+    if time_since_last_humidifier_activation >= HUMIDIFIER_COOLDOWN_DURATION {
+        if settings.humidity.low_range.contains(&sd.average_humidity()) {
+            info!("Activating humidifier for 1 second");
+            if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, true) {
+                warn!("Unable to turn on humidifier relay: {:?}", e);
+            } else {
+                std::thread::sleep(HUMIDIFIER_ACTIVATION_DURATION);
+                if let Err(e) = relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false) {
+                    warn!("Unable to turn off humidifier relay: {:?}", e);
+                } else {
+                    sd.set_humidifier_status(false);
+                    sd.set_humidifier_turn_off_datetime(current_time);
+                }
+            }
+        }
+    } else {
+        info!("Humidifier activation prevented due to cooldown period");
     }
 }

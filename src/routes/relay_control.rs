@@ -162,10 +162,10 @@ pub async fn change_dehumidifier_status(sd: web::Data<AccessSharedData>) -> Http
         .json(response)
 }
 
-#[derive(Serialize)]
-struct HeaterResponse {
-    heater_status: bool,
-    last_heater_turn_on: String,
-    last_heater_turn_off: String,
-    response: String,
-}
+//#[derive(Serialize)]
+//struct HeaterResponse {
+//    heater_status: bool,
+//    last_heater_turn_on: String,
+//    last_heater_turn_off: String,
+//    response: String,
+//}

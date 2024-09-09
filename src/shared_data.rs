@@ -239,15 +239,6 @@ impl AccessSharedData {
         lock.humidifier_turn_on_datetime = dt;
     }
 
-    pub fn ventilator_status(&self) -> bool {
-        let lock = self.sd.lock().unwrap();
-        lock.ventilator_status
-    }
-    pub fn set_ventilator_status(&self, new_val: bool) {
-        let mut lock = self.sd.lock().unwrap();
-        lock.ventilator_status = new_val;
-    }
-
     pub fn humidifier_turn_off_datetime(&self) -> OffsetDateTime {
         let lock = self.sd.lock().unwrap();
         lock.humidifier_turn_off_datetime
@@ -255,6 +246,15 @@ impl AccessSharedData {
     pub fn set_humidifier_turn_off_datetime(&self, dt: OffsetDateTime) {
         let mut lock = self.sd.lock().unwrap();
         lock.humidifier_turn_off_datetime = dt;
+    }
+
+    pub fn ventilator_status(&self) -> bool {
+        let lock = self.sd.lock().unwrap();
+        lock.ventilator_status
+    }
+    pub fn set_ventilator_status(&self, new_val: bool) {
+        let mut lock = self.sd.lock().unwrap();
+        lock.ventilator_status = new_val;
     }
 
     pub fn dehumidifier_turn_on_datetime(&self) -> OffsetDateTime {
@@ -279,6 +279,7 @@ impl AccessSharedData {
         let lock = self.sd.lock().unwrap();
         lock.heater_turn_on_datetime
     }
+
     pub fn set_heater_turn_on_datetime(&self, dt: OffsetDateTime) {
         let mut lock = self.sd.lock().unwrap();
         lock.heater_turn_on_datetime = dt;
@@ -288,6 +289,7 @@ impl AccessSharedData {
         let lock = self.sd.lock().unwrap();
         lock.heater_turn_off_datetime
     }
+
     pub fn set_heater_turn_off_datetime(&self, dt: OffsetDateTime) {
         let mut lock = self.sd.lock().unwrap();
         lock.heater_turn_off_datetime = dt;

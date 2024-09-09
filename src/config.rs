@@ -2,6 +2,7 @@ use crate::error::AtmosError;
 use config::{Config, File};
 use serde::Deserialize;
 use std::fmt;
+use std::ops::Range;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
@@ -11,22 +12,16 @@ pub struct Settings {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct TemperatureSettings {
-    pub low_range_min: f32,
-    pub low_range_max: f32,
-    pub high_range_min: f32,
-    pub high_range_max: f32,
-    pub ideal_range_min: f32,
-    pub ideal_range_max: f32,
+    pub low_range: Range<f32>,
+    pub high_range: Range<f32>,
+    pub ideal_range: Range<f32>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct HumiditySettings {
-    pub low_range_min: f32,
-    pub low_range_max: f32,
-    pub high_range_min: f32,
-    pub high_range_max: f32,
-    pub ideal_range_min: f32,
-    pub ideal_range_max: f32,
+    pub low_range: Range<f32>,
+    pub high_range: Range<f32>,
+    pub ideal_range: Range<f32>,
 }
 
 impl Settings {
@@ -49,11 +44,11 @@ impl Settings {
 
 impl TemperatureSettings {
     fn validate(&self) -> Result<(), AtmosError> {
-        if !(self.low_range_min <= self.low_range_max
-            && self.low_range_max < self.ideal_range_min
-            && self.ideal_range_min <= self.ideal_range_max
-            && self.ideal_range_max < self.high_range_min
-            && self.high_range_min <= self.high_range_max)
+        if !(self.low_range.start <= self.low_range.end
+            && self.low_range.end < self.ideal_range.start
+            && self.ideal_range.start <= self.ideal_range.end
+            && self.ideal_range.end < self.high_range.start
+            && self.high_range.start <= self.high_range.end)
         {
             return Err(AtmosError::ConfigError(config::ConfigError::Message(
                 "Invalid temperature ranges".into(),
@@ -65,11 +60,11 @@ impl TemperatureSettings {
 
 impl HumiditySettings {
     fn validate(&self) -> Result<(), AtmosError> {
-        if !(self.low_range_min <= self.low_range_max
-            && self.low_range_max < self.ideal_range_min
-            && self.ideal_range_min <= self.ideal_range_max
-            && self.ideal_range_max < self.high_range_min
-            && self.high_range_min <= self.high_range_max)
+        if !(self.low_range.start <= self.low_range.end
+            && self.low_range.end < self.ideal_range.start
+            && self.ideal_range.start <= self.ideal_range.end
+            && self.ideal_range.end < self.high_range.start
+            && self.high_range.start <= self.high_range.end)
         {
             return Err(AtmosError::ConfigError(config::ConfigError::Message(
                 "Invalid humidity ranges".into(),
