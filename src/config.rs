@@ -8,6 +8,8 @@ use std::ops::Range;
 pub struct Settings {
     pub temperature: TemperatureSettings,
     pub humidity: HumiditySettings,
+    pub ventilation: VentilationSettings,
+    pub influxdb: InfluxDbSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -15,6 +17,7 @@ pub struct TemperatureSettings {
     pub low_range: Range<f32>,
     pub high_range: Range<f32>,
     pub ideal_range: Range<f32>,
+    pub fridge_cooldown_duration: u64,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -22,12 +25,27 @@ pub struct HumiditySettings {
     pub low_range: Range<f32>,
     pub high_range: Range<f32>,
     pub ideal_range: Range<f32>,
+    pub humidifier_cooldown_duration: u64,
+    pub humidifier_activation_duration: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct VentilationSettings {
+    pub interval: u64,
+    pub duration: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct InfluxDbSettings {
+    pub host: String,
+    pub database: String,
 }
 
 impl Settings {
     pub fn new() -> Result<Self, AtmosError> {
         let s = Config::builder()
             .add_source(File::with_name("config"))
+            .add_source(config::Environment::with_prefix("ATMOS"))
             .build()?;
 
         let settings: Settings = s.try_deserialize()?;
@@ -78,8 +96,8 @@ impl fmt::Display for Settings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Temperature: {:?}\nHumidity: {:?}",
-            self.temperature, self.humidity
+            "Temperature: {:?}\nHumidity: {:?}\nVentilation: {:?}\nInfluxDB: {:?}",
+            self.temperature, self.humidity, self.ventilation, self.influxdb
         )
     }
 }

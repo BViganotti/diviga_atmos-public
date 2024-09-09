@@ -3,27 +3,49 @@ use time::OffsetDateTime;
 
 // A struct to hold the values that will be shared across all threads in the application
 pub struct SharedData {
+    /// Number of times the sensors have been polled
     polling_iterations: u64,
+    /// Temperature reading from the first sensor (in Celsius)
     temp_1: f32,
+    /// Humidity reading from the first sensor (in percentage)
     humidity_1: f32,
+    /// Temperature reading from the second sensor (in Celsius)
     temp_2: f32,
+    /// Humidity reading from the second sensor (in percentage)
     humidity_2: f32,
+    /// Average temperature from both sensors (in Celsius)
     average_temp: f32,
+    /// Average humidity from both sensors (in percentage)
     average_humidity: f32,
+    /// Calculated atmospheric quality index
     atmospheric_quality_index: f32,
+    /// Current status of the fridge (true if on, false if off)
     fridge_status: bool,
+    /// Current status of the humidifier (true if on, false if off)
     humidifier_status: bool,
+    /// Current status of the ventilator (true if on, false if off)
     ventilator_status: bool,
+    /// Current status of the dehumidifier (true if on, false if off)
     dehumidifier_status: bool,
+    /// Current status of the heater (true if on, false if off)
     heater_status: bool,
+    /// Timestamp of the last sensor reading
     last_reading_time: OffsetDateTime,
+    /// Timestamp when the fridge was last turned on
     fridge_turn_on_datetime: OffsetDateTime,
+    /// Timestamp when the fridge was last turned off
     fridge_turn_off_datetime: OffsetDateTime,
+    /// Timestamp when the humidifier was last turned on
     humidifier_turn_on_datetime: OffsetDateTime,
+    /// Timestamp when the humidifier was last turned off
     humidifier_turn_off_datetime: OffsetDateTime,
+    /// Timestamp when the dehumidifier was last turned on
     dehumidifier_turn_on_datetime: OffsetDateTime,
+    /// Timestamp when the dehumidifier was last turned off
     dehumidifier_turn_off_datetime: OffsetDateTime,
+    /// Timestamp when the heater was last turned on
     heater_turn_on_datetime: OffsetDateTime,
+    /// Timestamp when the heater was last turned off
     heater_turn_off_datetime: OffsetDateTime,
 }
 

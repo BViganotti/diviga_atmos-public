@@ -8,11 +8,11 @@ const VENTILATION_INTERVAL: Duration = Duration::from_secs(1800); // 30 minutes 
 async fn trigger_ventilator(sd: &AccessSharedData) -> Result<(), Box<dyn std::error::Error>> {
     println!("trigger_ventilator() -> turning ON ventilator for 60 seconds !");
     relay_ctrl::change_relay_status(RELAY_IN3_PIN_VENTILATOR_OR_HEATER, true).await?;
-    sd.set_ventilator_status(true);
+    (*sd).set_ventilator_status(true);
     sleep(Duration::from_secs(60)).await;
     println!("trigger_ventilator() -> turning OFF ventilator !");
     relay_ctrl::change_relay_status(RELAY_IN3_PIN_VENTILATOR_OR_HEATER, false).await?;
-    sd.set_ventilator_status(false);
+    (*sd).set_ventilator_status(false);
     Ok(())
 }
 

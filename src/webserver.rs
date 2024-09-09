@@ -27,31 +27,22 @@ pub async fn run_app(sd: &AccessSharedData) -> std::io::Result<()> {
         App::new()
             .app_data(common_data.clone())
             .app_data(tera_data.clone())
-            .route("/get_atmosphere", web::get().to(get_atmosphere))
-            .route(
-                "/get_full_atmospheric_data",
-                web::get().to(get_full_atmospheric_data),
+            .service(
+                web::scope("/api")
+                    .route("/atmosphere", web::get().to(get_atmosphere))
+                    .route("/atmosphere/full", web::get().to(get_full_atmospheric_data))
+                    .service(
+                        web::scope("/devices")
+                            .route("/fridge", web::post().to(change_fridge_status))
+                            .route("/fridge", web::get().to(get_fridge_status))
+                            .route("/humidifier", web::post().to(trigger_humidifier))
+                            .route("/humidifier", web::get().to(get_humidifier_status))
+                            .route("/dehumidifier", web::post().to(change_dehumidifier_status))
+                            .route("/dehumidifier", web::get().to(get_dehumidifier_status)),
+                    ),
             )
-            .route(
-                "/change_fridge_status",
-                web::post().to(change_fridge_status),
-            )
-            .route("/trigger_humidifier", web::post().to(trigger_humidifier))
-            .route(
-                "/change_dehumidifier_status",
-                web::post().to(change_dehumidifier_status),
-            )
-            .route("/get_fridge_status", web::get().to(get_fridge_status))
-            .route(
-                "/get_humidifier_status",
-                web::get().to(get_humidifier_status),
-            )
-            .route(
-                "/get_dehumidifier_status",
-                web::get().to(get_dehumidifier_status),
-            )
+            .route("/", web::get().to(index))
             .route("/heartbeat", web::get().to(pulse))
-            .service(web::resource("/").to(index))
     })
     .bind(("0.0.0.0", 8080))?
     .workers(2)

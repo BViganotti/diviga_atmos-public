@@ -5,14 +5,9 @@ use crate::relay_ctrl::{
     RELAY_IN1_PIN_HUMIDIFIER, RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN4_PIN_FRIDGE,
 };
 use crate::shared_data::AccessSharedData;
-use log::{info, warn};
+use log::{debug, info, trace, warn};
 use std::time::Duration;
 use time::{macros::offset, OffsetDateTime};
-use tokio::time::sleep;
-
-const FRIDGE_COOLDOWN_DURATION: Duration = Duration::from_secs(20 * 60); // 20 minutes
-const HUMIDIFIER_COOLDOWN_DURATION: Duration = Duration::from_secs(10 * 60); // 10 minutes
-const HUMIDIFIER_ACTIVATION_DURATION: Duration = Duration::from_secs(1); // 1 second
 
 pub async fn atmosphere_monitoring(
     sd: AccessSharedData,
@@ -24,17 +19,27 @@ pub async fn atmosphere_monitoring(
         update_atmosphere_quality_index(&sd, &settings);
 
         if sd.polling_iterations() > 4 {
+            debug!("Sufficient polling iterations reached, controlling devices");
             fridge_control(&sd, &settings).await?;
             dehumidifier_control(&sd, &settings).await?;
             humidifier_control(&sd, &settings).await?;
+        } else {
+            debug!(
+                "Not enough polling iterations yet: {}",
+                sd.polling_iterations()
+            );
         }
 
         info!(
-            "Current atmosphere - Temp: {:.2}°C, Humidity: {:.2}%",
+            "Current atmosphere - Temp: {:.2}°C, Humidity: {:.2}%, Quality Index: {:.2}",
             sd.average_temp(),
-            sd.average_humidity()
+            sd.average_humidity(),
+            sd.atmosphere_quality_index()
         );
-        sleep(Duration::from_secs(60)).await;
+        trace!("Detailed readings - Temp1: {:.2}°C, Humidity1: {:.2}%, Temp2: {:.2}°C, Humidity2: {:.2}%",
+            sd.temp_one(), sd.humidity_one(), sd.temp_two(), sd.humidity_two());
+
+        tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }
 
@@ -43,9 +48,9 @@ async fn fridge_control(sd: &AccessSharedData, settings: &Settings) -> Result<()
     let temp_range = get_temperature_range(sd.average_temp(), settings);
 
     match temp_range {
-        TempRange::High => handle_fridge_state(sd, now, true, "high temp range").await,
-        TempRange::Ideal => handle_fridge_state(sd, now, false, "ideal temp range").await,
-        TempRange::Low => handle_fridge_state(sd, now, false, "low temp range").await,
+        TempRange::High => handle_fridge_state(sd, now, true, "high temp range", settings).await,
+        TempRange::Ideal => handle_fridge_state(sd, now, false, "ideal temp range", settings).await,
+        TempRange::Low => handle_fridge_state(sd, now, false, "low temp range", settings).await,
     }
 }
 
@@ -54,6 +59,7 @@ async fn handle_fridge_state(
     now: OffsetDateTime,
     target_state: bool,
     range_info: &str,
+    settings: &Settings,
 ) -> Result<(), AtmosError> {
     info!("fridge_control() -> {}", range_info);
 
@@ -64,7 +70,9 @@ async fn handle_fridge_state(
             now - sd.fridge_turn_on_datetime()
         };
 
-        if time_since_last_change < FRIDGE_COOLDOWN_DURATION {
+        if time_since_last_change
+            < Duration::from_secs(settings.temperature.fridge_cooldown_duration)
+        {
             info!(
                 "fridge_control() -> waiting {:.2} minutes before turning {}",
                 time_since_last_change.whole_minutes() as f64,
@@ -176,14 +184,23 @@ async fn humidifier_control(sd: &AccessSharedData, settings: &Settings) -> Resul
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     let humidity_range = get_humidity_range(sd.average_humidity(), settings);
     let sd_clone = sd.clone();
+    let settings_clone = settings.clone();
 
     tokio::spawn(async move {
         match humidity_range {
             HumidityRange::Low => {
-                handle_humidifier_state(&sd_clone, now, true, "low humidity range").await
+                handle_humidifier_state(&sd_clone, now, true, "low humidity range", &settings_clone)
+                    .await
             }
             _ => {
-                handle_humidifier_state(&sd_clone, now, false, "ideal or high humidity range").await
+                handle_humidifier_state(
+                    &sd_clone,
+                    now,
+                    false,
+                    "ideal or high humidity range",
+                    &settings_clone,
+                )
+                .await
             }
         }
     });
@@ -196,16 +213,23 @@ async fn handle_humidifier_state(
     now: OffsetDateTime,
     activate: bool,
     range_info: &str,
+    settings: &Settings,
 ) {
     info!("humidifier_control() -> {}", range_info);
 
     let time_since_last_activation = now - sd.humidifier_turn_off_datetime();
 
-    if activate && time_since_last_activation >= HUMIDIFIER_COOLDOWN_DURATION {
+    if activate
+        && time_since_last_activation
+            >= Duration::from_secs(settings.humidity.humidifier_cooldown_duration)
+    {
         info!("humidifier_control() -> activating humidifier for 1 second");
         match relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, true).await {
             Ok(_) => {
-                tokio::time::sleep(HUMIDIFIER_ACTIVATION_DURATION).await;
+                tokio::time::sleep(Duration::from_secs(
+                    settings.humidity.humidifier_activation_duration,
+                ))
+                .await;
                 if let Err(e) =
                     relay_ctrl::change_relay_status(RELAY_IN1_PIN_HUMIDIFIER, false).await
                 {

@@ -291,6 +291,7 @@ dependencies = [
  "env_logger",
  "influxdb",
  "log",
+ "paste",
  "rppal",
  "serde",
  "serde_json",

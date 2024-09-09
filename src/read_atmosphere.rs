@@ -45,10 +45,18 @@ pub async fn read_atmosphere_from_sensors(
         }
     }
 
-    let t1: f32 = v["t1"].as_f64().unwrap() as f32;
-    let h1: f32 = v["h1"].as_f64().unwrap() as f32;
-    let t2: f32 = v["t2"].as_f64().unwrap() as f32;
-    let h2: f32 = v["h2"].as_f64().unwrap() as f32;
+    let t1: f32 = v["t1"]
+        .as_f64()
+        .ok_or(AtmosError::SensorReadError("Invalid t1 value".into()))? as f32;
+    let h1: f32 = v["h1"]
+        .as_f64()
+        .ok_or(AtmosError::SensorReadError("Invalid h1 value".into()))? as f32;
+    let t2: f32 = v["t2"]
+        .as_f64()
+        .ok_or(AtmosError::SensorReadError("Invalid t2 value".into()))? as f32;
+    let h2: f32 = v["h2"]
+        .as_f64()
+        .ok_or(AtmosError::SensorReadError("Invalid h2 value".into()))? as f32;
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
 
     println!("t1:{}, h1:{}, t2:{}, h2:{}", t1, h1, t2, h2);

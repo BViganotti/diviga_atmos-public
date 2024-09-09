@@ -10,6 +10,7 @@ pub enum AtmosError {
     SensorReadError(String),
     RelayControlError(String),
     InfluxDbError(InfluxDbError),
+    JsonParseError(String),
 }
 
 impl fmt::Display for AtmosError {
@@ -22,6 +23,7 @@ impl fmt::Display for AtmosError {
             AtmosError::SensorReadError(e) => write!(f, "Sensor read error: {}", e),
             AtmosError::RelayControlError(e) => write!(f, "Relay control error: {}", e),
             AtmosError::InfluxDbError(e) => write!(f, "InfluxDB error: {}", e),
+            AtmosError::JsonParseError(e) => write!(f, "JSON parse error: {}", e),
         }
     }
 }
@@ -41,8 +43,8 @@ impl From<std::io::Error> for AtmosError {
 }
 
 impl From<serde_json::Error> for AtmosError {
-    fn from(err: serde_json::Error) -> Self {
-        AtmosError::JsonError(err)
+    fn from(error: serde_json::Error) -> Self {
+        AtmosError::JsonParseError(error.to_string())
     }
 }
 

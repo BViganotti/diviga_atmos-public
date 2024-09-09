@@ -1,3 +1,4 @@
+use crate::error::AtmosError;
 use crate::relay_ctrl::{
     change_relay_status as relay_status_change, RELAY_IN1_PIN_HUMIDIFIER,
     RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN4_PIN_FRIDGE,
@@ -20,60 +21,50 @@ struct RelayResponse<T> {
     extra: T,
 }
 
-async fn change_relay_status(
+async fn change_relay_status<F, G, H, I, J, K>(
     sd: &web::Data<AccessSharedData>,
     relay_pin: u8,
-    get_status: impl Fn(&AccessSharedData) -> bool,
-    set_status: impl Fn(&AccessSharedData, bool),
-    set_turn_on: impl Fn(&AccessSharedData, OffsetDateTime),
-    set_turn_off: impl Fn(&AccessSharedData, OffsetDateTime),
-    get_turn_on: impl Fn(&AccessSharedData) -> OffsetDateTime,
-    get_turn_off: impl Fn(&AccessSharedData) -> OffsetDateTime,
+    get_status: F,
+    set_status: G,
+    set_turn_on: H,
+    set_turn_off: I,
+    get_turn_on: J,
+    get_turn_off: K,
     min_wait_time: Duration,
-) -> RelayResponse<()> {
+) -> RelayResponse<()>
+where
+    F: Fn(&AccessSharedData) -> bool,
+    G: Fn(&AccessSharedData, bool),
+    H: Fn(&AccessSharedData, OffsetDateTime),
+    I: Fn(&AccessSharedData, OffsetDateTime),
+    J: Fn(&AccessSharedData) -> OffsetDateTime,
+    K: Fn(&AccessSharedData) -> OffsetDateTime,
+{
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
     let prev_status = get_status(sd);
-    let response;
-
-    if prev_status {
-        if now - get_turn_on(sd) < min_wait_time {
-            let wait_time = min_wait_time - (now - get_turn_on(sd));
-            response = format!(
-                "Still on, wait {:.1} minutes before turning off",
-                wait_time.as_seconds_f64() / 60.0
-            );
-        } else {
-            match relay_status_change(relay_pin, false).await {
-                Ok(_) => {
-                    set_status(sd, false);
-                    set_turn_off(sd, now);
-                    response = "Turned off".to_string();
-                }
-                Err(e) => {
-                    response = format!("Error turning off: {}", e);
-                }
-            }
-        }
+    let response = if prev_status {
+        handle_relay_turn_off(
+            sd,
+            relay_pin,
+            &set_status,
+            &set_turn_off,
+            &get_turn_on,
+            now,
+            min_wait_time,
+        )
+        .await
     } else {
-        if now - get_turn_off(sd) < min_wait_time {
-            let wait_time = min_wait_time - (now - get_turn_off(sd));
-            response = format!(
-                "Still off, wait {:.1} minutes before turning on",
-                wait_time.as_seconds_f64() / 60.0
-            );
-        } else {
-            match relay_status_change(relay_pin, true).await {
-                Ok(_) => {
-                    set_status(sd, true);
-                    set_turn_on(sd, now);
-                    response = "Turned on".to_string();
-                }
-                Err(e) => {
-                    response = format!("Error turning on: {}", e);
-                }
-            }
-        }
-    }
+        handle_relay_turn_on(
+            sd,
+            relay_pin,
+            &set_status,
+            &set_turn_on,
+            &get_turn_off,
+            now,
+            min_wait_time,
+        )
+        .await
+    };
 
     RelayResponse {
         previous_status: prev_status,
@@ -82,6 +73,70 @@ async fn change_relay_status(
         last_turn_off: get_turn_off(sd).to_string(),
         response,
         extra: (),
+    }
+}
+
+async fn handle_relay_turn_off<F, G, H>(
+    sd: &AccessSharedData,
+    relay_pin: u8,
+    set_status: F,
+    set_turn_off: G,
+    get_turn_on: H,
+    now: OffsetDateTime,
+    min_wait_time: Duration,
+) -> String
+where
+    F: Fn(&AccessSharedData, bool),
+    G: Fn(&AccessSharedData, OffsetDateTime),
+    H: Fn(&AccessSharedData) -> OffsetDateTime,
+{
+    if now - get_turn_on(sd) < min_wait_time {
+        let wait_time = min_wait_time - (now - get_turn_on(sd));
+        format!(
+            "Still on, wait {:.1} minutes before turning off",
+            wait_time.as_seconds_f64() / 60.0
+        )
+    } else {
+        match relay_status_change(relay_pin, false).await {
+            Ok(_) => {
+                set_status(sd, false);
+                set_turn_off(sd, now);
+                "Turned off".to_string()
+            }
+            Err(e) => format!("Error turning off: {}", e),
+        }
+    }
+}
+
+async fn handle_relay_turn_on<F, G, H>(
+    sd: &AccessSharedData,
+    relay_pin: u8,
+    set_status: F,
+    set_turn_on: G,
+    get_turn_off: H,
+    now: OffsetDateTime,
+    min_wait_time: Duration,
+) -> String
+where
+    F: Fn(&AccessSharedData, bool),
+    G: Fn(&AccessSharedData, OffsetDateTime),
+    H: Fn(&AccessSharedData) -> OffsetDateTime,
+{
+    if now - get_turn_off(sd) < min_wait_time {
+        let wait_time = min_wait_time - (now - get_turn_off(sd));
+        format!(
+            "Still off, wait {:.1} minutes before turning on",
+            wait_time.as_seconds_f64() / 60.0
+        )
+    } else {
+        match relay_status_change(relay_pin, true).await {
+            Ok(_) => {
+                set_status(sd, true);
+                set_turn_on(sd, now);
+                "Turned on".to_string()
+            }
+            Err(e) => format!("Error turning on: {}", e),
+        }
     }
 }
 
@@ -114,30 +169,14 @@ struct HumidifierResponse {
 
 pub async fn trigger_humidifier(sd: web::Data<AccessSharedData>) -> HttpResponse {
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
-    let mut response = String::new();
-
-    if !sd.humidifier_status() {
-        match relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, true).await {
-            Ok(_) => {
-                sd.set_humidifier_status(true);
-                sd.set_humidifier_turn_on_datetime(now);
-                tokio::time::sleep(Duration::from_secs(1)).await;
-                match relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, false).await {
-                    Ok(_) => {
-                        sd.set_humidifier_status(false);
-                        sd.set_humidifier_turn_off_datetime(now);
-                        response = "Humidifier turned on and off for 1 sec".to_string();
-                    }
-                    Err(e) => {
-                        response = format!("Error turning off humidifier: {}", e);
-                    }
-                }
-            }
-            Err(e) => {
-                response = format!("Error turning on humidifier: {}", e);
-            }
+    let response = if !sd.humidifier_status() {
+        match trigger_humidifier_cycle(&sd, now).await {
+            Ok(msg) => msg,
+            Err(e) => format!("Error: {}", e),
         }
-    }
+    } else {
+        "Humidifier is already active".to_string()
+    };
 
     let response = HumidifierResponse {
         humidifier_status: sd.humidifier_status(),
@@ -149,6 +188,23 @@ pub async fn trigger_humidifier(sd: web::Data<AccessSharedData>) -> HttpResponse
     HttpResponse::Ok()
         .content_type(ContentType::json())
         .json(response)
+}
+
+async fn trigger_humidifier_cycle(
+    sd: &AccessSharedData,
+    now: OffsetDateTime,
+) -> Result<String, AtmosError> {
+    relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, true).await?;
+    sd.set_humidifier_status(true);
+    sd.set_humidifier_turn_on_datetime(now);
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    relay_status_change(RELAY_IN1_PIN_HUMIDIFIER, false).await?;
+    sd.set_humidifier_status(false);
+    sd.set_humidifier_turn_off_datetime(now);
+
+    Ok("Humidifier turned on and off for 1 sec".to_string())
 }
 
 #[derive(Serialize)]
@@ -186,11 +242,3 @@ pub async fn change_dehumidifier_status(sd: web::Data<AccessSharedData>) -> Http
         .content_type(ContentType::json())
         .json(response)
 }
-
-//#[derive(Serialize)]
-//struct HeaterResponse {
-//    heater_status: bool,
-//    last_heater_turn_on: String,
-//    last_heater_turn_off: String,
-//    response: String,
-//}
