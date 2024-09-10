@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 use time::OffsetDateTime;
 
+use crate::relay_ctrl::RelayStatus;
+
 // A struct to hold the values that will be shared across all threads in the application
 pub struct SharedData {
     /// Number of times the sensors have been polled
@@ -20,15 +22,15 @@ pub struct SharedData {
     /// Calculated atmospheric quality index
     atmospheric_quality_index: f32,
     /// Current status of the fridge (true if on, false if off)
-    fridge_status: bool,
+    fridge_status: RelayStatus,
     /// Current status of the humidifier (true if on, false if off)
-    humidifier_status: bool,
+    humidifier_status: RelayStatus,
     /// Current status of the ventilator (true if on, false if off)
-    ventilator_status: bool,
+    ventilator_status: RelayStatus,
     /// Current status of the dehumidifier (true if on, false if off)
-    dehumidifier_status: bool,
+    dehumidifier_status: RelayStatus,
     /// Current status of the heater (true if on, false if off)
-    heater_status: bool,
+    heater_status: RelayStatus,
     /// Timestamp of the last sensor reading
     last_reading_time: OffsetDateTime,
     /// Timestamp when the fridge was last turned on
@@ -59,11 +61,11 @@ impl SharedData {
         average_temp: f32,
         average_humidity: f32,
         atmospheric_quality_index: f32,
-        fridge_status: bool,
-        humidifier_status: bool,
-        ventilator_status: bool,
-        dehumidifier_status: bool,
-        heater_status: bool,
+        fridge_status: RelayStatus,
+        humidifier_status: RelayStatus,
+        ventilator_status: RelayStatus,
+        dehumidifier_status: RelayStatus,
+        heater_status: RelayStatus,
         last_reading_time: OffsetDateTime,
         fridge_turn_on_datetime: OffsetDateTime,
         fridge_turn_off_datetime: OffsetDateTime,
@@ -191,36 +193,36 @@ impl AccessSharedData {
         lock.atmospheric_quality_index = new_val;
     }
 
-    pub fn fridge_status(&self) -> bool {
+    pub fn fridge_status(&self) -> RelayStatus {
         let lock = self.sd.lock().unwrap();
         lock.fridge_status
     }
-    pub fn set_fridge_status(&self, new_val: bool) {
+    pub fn set_fridge_status(&self, new_val: RelayStatus) {
         let mut lock = self.sd.lock().unwrap();
         lock.fridge_status = new_val;
     }
 
-    pub fn humidifier_status(&self) -> bool {
+    pub fn humidifier_status(&self) -> RelayStatus {
         let lock = self.sd.lock().unwrap();
         lock.humidifier_status
     }
-    pub fn set_humidifier_status(&self, new_val: bool) {
+    pub fn set_humidifier_status(&self, new_val: RelayStatus) {
         let mut lock = self.sd.lock().unwrap();
         lock.humidifier_status = new_val;
     }
-    pub fn dehumidifier_status(&self) -> bool {
+    pub fn dehumidifier_status(&self) -> RelayStatus {
         let lock = self.sd.lock().unwrap();
         lock.dehumidifier_status
     }
-    pub fn set_dehumidifier_status(&self, new_val: bool) {
+    pub fn set_dehumidifier_status(&self, new_val: RelayStatus) {
         let mut lock = self.sd.lock().unwrap();
         lock.dehumidifier_status = new_val;
     }
-    pub fn heater_status(&self) -> bool {
+    pub fn heater_status(&self) -> RelayStatus {
         let lock = self.sd.lock().unwrap();
         lock.heater_status
     }
-    pub fn set_heater_status(&self, new_val: bool) {
+    pub fn set_heater_status(&self, new_val: RelayStatus) {
         let mut lock = self.sd.lock().unwrap();
         lock.heater_status = new_val;
     }
@@ -270,11 +272,11 @@ impl AccessSharedData {
         lock.humidifier_turn_off_datetime = dt;
     }
 
-    pub fn ventilator_status(&self) -> bool {
+    pub fn ventilator_status(&self) -> RelayStatus {
         let lock = self.sd.lock().unwrap();
         lock.ventilator_status
     }
-    pub fn set_ventilator_status(&self, new_val: bool) {
+    pub fn set_ventilator_status(&self, new_val: RelayStatus) {
         let mut lock = self.sd.lock().unwrap();
         lock.ventilator_status = new_val;
     }

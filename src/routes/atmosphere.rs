@@ -1,4 +1,4 @@
-use crate::AccessSharedData;
+use crate::{relay_ctrl::RelayStatus, AccessSharedData};
 use actix_web::{http::header::ContentType, web, HttpResponse};
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -28,10 +28,10 @@ pub struct FullData {
     average_temp: f32,
     average_humidity: f32,
     atmospheric_quality_index: f32,
-    fridge_status: bool,
-    humidifier_status: bool,
-    dehumidifier_status: bool,
-    heater_status: bool,
+    fridge_status: RelayStatus,
+    humidifier_status: RelayStatus,
+    dehumidifier_status: RelayStatus,
+    heater_status: RelayStatus,
     last_reading_time: String,
     fridge_turn_on_datetime: String,
     fridge_turn_off_datetime: String,

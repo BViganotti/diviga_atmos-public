@@ -1,9 +1,9 @@
-use crate::AccessSharedData;
+use crate::{relay_ctrl::RelayStatus, AccessSharedData};
 use actix_web::{http::header::ContentType, web, Error, HttpResponse};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct FridgeStatus {
-    fridge_status: bool,
+    fridge_status: RelayStatus,
     last_fridge_turn_on: String,
     last_fridge_turn_off: String,
 }
@@ -23,7 +23,7 @@ pub async fn get_fridge_status(sd: web::Data<AccessSharedData>) -> Result<HttpRe
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct HumidifierStatus {
-    humidifier_status: bool,
+    humidifier_status: RelayStatus,
     last_humidifier_turn_on: String,
     last_humidifier_turn_off: String,
 }
@@ -44,7 +44,7 @@ pub async fn get_humidifier_status(sd: web::Data<AccessSharedData>) -> Result<Ht
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct DehumidifierStatus {
-    dehumidifier_status: bool,
+    dehumidifier_status: RelayStatus,
     last_dehumidifier_turn_on: String,
     last_dehumidifier_turn_off: String,
 }

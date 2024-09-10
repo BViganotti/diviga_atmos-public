@@ -11,6 +11,7 @@ pub enum AtmosError {
     RelayControlError(String),
     InfluxDbError(InfluxDbError),
     JsonParseError(String),
+    HttpError(String),
 }
 
 impl fmt::Display for AtmosError {
@@ -24,6 +25,7 @@ impl fmt::Display for AtmosError {
             AtmosError::RelayControlError(e) => write!(f, "Relay control error: {}", e),
             AtmosError::InfluxDbError(e) => write!(f, "InfluxDB error: {}", e),
             AtmosError::JsonParseError(e) => write!(f, "JSON parse error: {}", e),
+            AtmosError::HttpError(e) => write!(f, "HTTP error: {}", e),
         }
     }
 }

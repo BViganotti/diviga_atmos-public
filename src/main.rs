@@ -1,7 +1,3 @@
-/*
-This project is very very much influenced and heavily copy pasted from https://github.com/mikehentges/thermostat-pi.
-*/
-
 pub mod config;
 pub mod error;
 pub mod monitor_atmosphere;
@@ -12,25 +8,18 @@ pub mod routes;
 pub mod shared_data;
 pub mod ventilation;
 pub mod webserver;
-
-use crate::relay_ctrl::{
-    RELAY_IN1_PIN_HUMIDIFIER, RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN3_PIN_VENTILATOR_OR_HEATER,
-    RELAY_IN4_PIN_FRIDGE,
-};
+use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
 use crate::shared_data::SharedData;
 use dotenv::dotenv;
+use relay_ctrl::RelayStatus;
 use std::sync::Arc;
 use std::sync::Mutex;
 use time::macros::offset;
 use time::OffsetDateTime;
-
-use crate::config::Settings;
-
 mod influx_client;
-use influx_client::InfluxClient;
-
 use crate::request_atmosphere::request_atmosphere;
+use influx_client::InfluxClient;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -51,11 +40,11 @@ async fn main() -> std::io::Result<()> {
         0.0,
         80.0,
         0.0,
-        false,
-        false,
-        false,
-        false,
-        false, // Add this line for heater_status
+        RelayStatus::Off,
+        RelayStatus::Off,
+        RelayStatus::Off,
+        RelayStatus::Off,
+        RelayStatus::Off,
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
         OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
@@ -69,12 +58,12 @@ async fn main() -> std::io::Result<()> {
 
     // setting all the pins to false just in case
     for pin in &[
-        RELAY_IN1_PIN_HUMIDIFIER,
-        RELAY_IN2_PIN_DEHUMIDIFIER,
-        RELAY_IN3_PIN_VENTILATOR_OR_HEATER,
-        RELAY_IN4_PIN_FRIDGE,
+        settings.relay_pins.humidifier,
+        settings.relay_pins.dehumidifier,
+        settings.relay_pins.ventilator_or_heater,
+        settings.relay_pins.fridge,
     ] {
-        relay_ctrl::change_relay_status(*pin, false)
+        relay_ctrl::change_relay_status(*pin, RelayStatus::Off)
             .await
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     }
@@ -84,7 +73,7 @@ async fn main() -> std::io::Result<()> {
         sd: Arc::new(Mutex::new(common_data)),
     };
 
-    let influx_client = InfluxClient::new("http://localhost:8086", "atmosphere_db");
+    let influx_client = InfluxClient::new(&settings.influxdb.host, &settings.influxdb.database);
 
     // Clone for atmosphere request task
     let atmosphere_data = shared_data.clone();
@@ -96,8 +85,9 @@ async fn main() -> std::io::Result<()> {
 
     // Clone for ventilation task
     let ventilation_data = shared_data.clone();
+    let ventilation_settings = settings.clone();
     tokio::spawn(async move {
-        ventilation::ventilation_loop(ventilation_data).await;
+        ventilation::ventilation_loop(&ventilation_data, &ventilation_settings).await;
     });
 
     // Clone for atmosphere monitoring task
@@ -113,8 +103,9 @@ async fn main() -> std::io::Result<()> {
 
     // Clone for webserver task
     let webserver_data = shared_data.clone();
+    let webserver_settings = settings.clone();
     tokio::spawn(async move {
-        let server_future = webserver::run_app(&webserver_data);
+        let server_future = webserver::run_app(&webserver_data, &webserver_settings);
         server_future.await
     });
 

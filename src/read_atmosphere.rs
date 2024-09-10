@@ -4,8 +4,6 @@ use crate::shared_data::AccessSharedData;
 use log::info;
 use serde_json::Value;
 use std::process::Command;
-//use std::thread;
-//use std::time::Duration;
 use time::macros::offset;
 use time::OffsetDateTime;
 use tokio::time::Duration;
@@ -15,7 +13,6 @@ fn get_atmosphere_from_sensor() -> Result<String, AtmosError> {
     let str_output = String::from_utf8_lossy(&output.stdout).to_string();
     println!("{}", str_output);
     info!("Sensor output: {}", str_output);
-
     Ok(str_output)
 }
 

@@ -4,13 +4,18 @@
 use crate::error::AtmosError;
 use log::info;
 use rppal::gpio::Gpio;
+use serde::{Deserialize, Serialize};
 
-pub const RELAY_IN1_PIN_HUMIDIFIER: u8 = 14;
-pub const RELAY_IN2_PIN_DEHUMIDIFIER: u8 = 15;
-pub const RELAY_IN3_PIN_VENTILATOR_OR_HEATER: u8 = 18;
-pub const RELAY_IN4_PIN_FRIDGE: u8 = 17;
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+pub enum RelayStatus {
+    On,
+    Off,
+}
 
-pub async fn change_relay_status(pin_number: u8, relay_status: bool) -> Result<(), AtmosError> {
+pub async fn change_relay_status(
+    pin_number: u8,
+    relay_status: RelayStatus,
+) -> Result<(), AtmosError> {
     let mut pin = Gpio::new()?
         .get(pin_number)
         .map_err(|_| AtmosError::RelayControlError(format!("Can't get pin {}", pin_number)))?
@@ -19,13 +24,11 @@ pub async fn change_relay_status(pin_number: u8, relay_status: bool) -> Result<(
     pin.set_reset_on_drop(false);
 
     match relay_status {
-        false => {
-            println!("setting pin high -> turning relay OFF");
+        RelayStatus::Off => {
             info!("Setting pin {} high -> turning relay OFF", pin_number);
             pin.set_high();
         }
-        true => {
-            println!("setting pin low -> turning relay ON");
+        RelayStatus::On => {
             info!("Setting pin {} low -> turning relay ON", pin_number);
             pin.set_low();
         }

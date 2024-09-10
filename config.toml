@@ -2,8 +2,30 @@
 low_range = -20.0..11.0
 high_range = 14.0..100.0
 ideal_range = 11.0..14.0
+fridge_cooldown_duration = 300
 
 [humidity]
 low_range = 0.0..60.0
 high_range = 80.0..100.0
 ideal_range = 75.0..80.0
+humidifier_cooldown_duration = 300
+humidifier_activation_duration = 1
+
+[ventilation]
+interval = 1800
+duration = 60
+
+[influxdb]
+host = "http://localhost:8086"
+database = "atmosphere_db"
+
+[relay_pins]
+humidifier = 14
+dehumidifier = 15
+ventilator_or_heater = 18
+fridge = 17
+
+[webserver]
+host = "0.0.0.0"
+port = 8080
+

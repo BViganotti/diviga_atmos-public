@@ -10,6 +10,8 @@ pub struct Settings {
     pub humidity: HumiditySettings,
     pub ventilation: VentilationSettings,
     pub influxdb: InfluxDbSettings,
+    pub relay_pins: RelayPinSettings,
+    pub webserver: WebserverSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -39,6 +41,14 @@ pub struct VentilationSettings {
 pub struct InfluxDbSettings {
     pub host: String,
     pub database: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RelayPinSettings {
+    pub humidifier: u8,
+    pub dehumidifier: u8,
+    pub ventilator_or_heater: u8,
+    pub fridge: u8,
 }
 
 impl Settings {
@@ -99,5 +109,17 @@ impl fmt::Display for Settings {
             "Temperature: {:?}\nHumidity: {:?}\nVentilation: {:?}\nInfluxDB: {:?}",
             self.temperature, self.humidity, self.ventilation, self.influxdb
         )
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct WebserverSettings {
+    pub host: String,
+    pub port: u16,
+}
+
+impl fmt::Display for WebserverSettings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Webserver: {:?}", self)
     }
 }

@@ -1,19 +1,14 @@
-use crate::error::AtmosError;
-use crate::relay_ctrl::{
-    change_relay_status as relay_status_change, RELAY_IN1_PIN_HUMIDIFIER,
-    RELAY_IN2_PIN_DEHUMIDIFIER, RELAY_IN4_PIN_FRIDGE,
-};
 use crate::AccessSharedData;
+use crate::{error::AtmosError, relay_ctrl::RelayStatus};
 use actix_web::{http::header::ContentType, web, HttpResponse};
 use serde::Serialize;
-//use std::{thread, time::Duration};
 use time::{macros::offset, OffsetDateTime};
 use tokio::time::Duration;
 
 #[derive(Serialize)]
 struct RelayResponse<T> {
-    previous_status: bool,
-    new_status: bool,
+    previous_status: RelayStatus,
+    new_status: RelayStatus,
     last_turn_on: String,
     last_turn_off: String,
     response: String,
