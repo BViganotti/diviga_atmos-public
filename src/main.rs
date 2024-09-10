@@ -1,6 +1,7 @@
 pub mod config;
 pub mod error;
 pub mod monitor_atmosphere;
+pub mod monitor_atmosphere_old;
 pub mod read_atmosphere;
 pub mod relay_ctrl;
 pub mod request_atmosphere;
@@ -8,6 +9,7 @@ pub mod routes;
 pub mod shared_data;
 pub mod ventilation;
 pub mod webserver;
+pub mod mock_relay_ctrl;
 use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
 use crate::shared_data::SharedData;
@@ -77,10 +79,16 @@ async fn main() -> std::io::Result<()> {
 
     // Clone for atmosphere request task
     let atmosphere_data = shared_data.clone();
+    let atmosphere_settings = settings.clone();
     let atmosphere_influx_client = influx_client.clone();
 
     let atmosphere_handle = tokio::spawn(async move {
-        request_atmosphere(&atmosphere_data, &atmosphere_influx_client).await;
+        request_atmosphere(
+            &atmosphere_data,
+            &atmosphere_settings,
+            &atmosphere_influx_client,
+        )
+        .await;
     });
 
     // Clone for ventilation task
@@ -95,7 +103,8 @@ async fn main() -> std::io::Result<()> {
     let monitoring_settings = settings.clone();
     tokio::spawn(async move {
         if let Err(e) =
-            monitor_atmosphere::atmosphere_monitoring(monitoring_data, monitoring_settings).await
+            monitor_atmosphere_old::atmosphere_monitoring(monitoring_data, monitoring_settings)
+                .await
         {
             log::error!("Atmosphere monitoring error: {}", e);
         }

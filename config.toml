@@ -1,13 +1,19 @@
 [temperature]
-low_range = -20.0..11.0
-high_range = 14.0..100.0
-ideal_range = 11.0..14.0
+low_range_start = -20.0
+low_range_end = 11.0
+high_range_start = 14.0
+high_range_end = 100.0
+ideal_range_start = 11.0
+ideal_range_end = 14.0
 fridge_cooldown_duration = 300
 
 [humidity]
-low_range = 0.0..60.0
-high_range = 80.0..100.0
-ideal_range = 75.0..80.0
+low_range_start = 0.0
+low_range_end = 60.0
+high_range_start = 80.0
+high_range_end = 100.0
+ideal_range_start = 75.0
+ideal_range_end = 80.0
 humidifier_cooldown_duration = 300
 humidifier_activation_duration = 1
 
@@ -29,3 +35,8 @@ fridge = 17
 host = "0.0.0.0"
 port = 8080
 
+[sensor_read_cooldown]
+duration = 45
+
+[polling_interval]
+duration = 60

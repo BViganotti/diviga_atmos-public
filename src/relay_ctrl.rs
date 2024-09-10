@@ -1,38 +1,34 @@
-// Controls a relay connected to the Pi - by setting a pin high or low
-// on demand.
-
 use crate::error::AtmosError;
-use log::info;
-use rppal::gpio::Gpio;
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[cfg(not(test))]
+use rppal::gpio::Gpio;
+
+#[cfg(test)]
+use crate::mock_relay_ctrl::{get_mock_relay_status, mock_change_relay_status};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum RelayStatus {
     On,
     Off,
 }
 
-pub async fn change_relay_status(
-    pin_number: u8,
-    relay_status: RelayStatus,
-) -> Result<(), AtmosError> {
-    let mut pin = Gpio::new()?
-        .get(pin_number)
-        .map_err(|_| AtmosError::RelayControlError(format!("Can't get pin {}", pin_number)))?
-        .into_output();
-
-    pin.set_reset_on_drop(false);
-
-    match relay_status {
-        RelayStatus::Off => {
-            info!("Setting pin {} high -> turning relay OFF", pin_number);
-            pin.set_high();
-        }
-        RelayStatus::On => {
-            info!("Setting pin {} low -> turning relay ON", pin_number);
-            pin.set_low();
-        }
+#[cfg(not(test))]
+pub async fn change_relay_status(pin: u8, status: RelayStatus) -> Result<(), AtmosError> {
+    let gpio = Gpio::new()?;
+    let mut pin = gpio.get(pin)?.into_output();
+    match status {
+        RelayStatus::On => pin.set_high(),
+        RelayStatus::Off => pin.set_low(),
     }
-
     Ok(())
+}
+
+#[cfg(test)]
+pub async fn change_relay_status(pin: u8, status: RelayStatus) -> Result<(), AtmosError> {
+    mock_change_relay_status(pin, status).await
+}
+
+#[cfg(test)]
+pub fn get_relay_status(pin: u8) -> RelayStatus {
+    get_mock_relay_status(pin)
 }

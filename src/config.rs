@@ -12,23 +12,59 @@ pub struct Settings {
     pub influxdb: InfluxDbSettings,
     pub relay_pins: RelayPinSettings,
     pub webserver: WebserverSettings,
+    pub sensor_read_cooldown: u64,
+    pub polling_interval: u64,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct TemperatureSettings {
-    pub low_range: Range<f32>,
-    pub high_range: Range<f32>,
-    pub ideal_range: Range<f32>,
+    pub low_range_start: f32,
+    pub low_range_end: f32,
+    pub high_range_start: f32,
+    pub high_range_end: f32,
+    pub ideal_range_start: f32,
+    pub ideal_range_end: f32,
     pub fridge_cooldown_duration: u64,
+}
+
+impl TemperatureSettings {
+    pub fn low_range(&self) -> Range<f32> {
+        self.low_range_start..self.low_range_end
+    }
+
+    pub fn high_range(&self) -> Range<f32> {
+        self.high_range_start..self.high_range_end
+    }
+
+    pub fn ideal_range(&self) -> Range<f32> {
+        self.ideal_range_start..self.ideal_range_end
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct HumiditySettings {
-    pub low_range: Range<f32>,
-    pub high_range: Range<f32>,
-    pub ideal_range: Range<f32>,
+    pub low_range_start: f32,
+    pub low_range_end: f32,
+    pub high_range_start: f32,
+    pub high_range_end: f32,
+    pub ideal_range_start: f32,
+    pub ideal_range_end: f32,
     pub humidifier_cooldown_duration: u64,
     pub humidifier_activation_duration: u64,
+}
+
+impl HumiditySettings {
+    pub fn low_range(&self) -> Range<f32> {
+        self.low_range_start..self.low_range_end
+    }
+
+    pub fn high_range(&self) -> Range<f32> {
+        self.high_range_start..self.high_range_end
+    }
+
+    pub fn ideal_range(&self) -> Range<f32> {
+        self.ideal_range_start..self.ideal_range_end
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -72,11 +108,11 @@ impl Settings {
 
 impl TemperatureSettings {
     fn validate(&self) -> Result<(), AtmosError> {
-        if !(self.low_range.start <= self.low_range.end
-            && self.low_range.end < self.ideal_range.start
-            && self.ideal_range.start <= self.ideal_range.end
-            && self.ideal_range.end < self.high_range.start
-            && self.high_range.start <= self.high_range.end)
+        if !(self.low_range().start <= self.low_range().end
+            && self.low_range().end < self.ideal_range().start
+            && self.ideal_range().start <= self.ideal_range().end
+            && self.ideal_range().end < self.high_range().start
+            && self.high_range().start <= self.high_range().end)
         {
             return Err(AtmosError::ConfigError(config::ConfigError::Message(
                 "Invalid temperature ranges".into(),
@@ -88,11 +124,11 @@ impl TemperatureSettings {
 
 impl HumiditySettings {
     fn validate(&self) -> Result<(), AtmosError> {
-        if !(self.low_range.start <= self.low_range.end
-            && self.low_range.end < self.ideal_range.start
-            && self.ideal_range.start <= self.ideal_range.end
-            && self.ideal_range.end < self.high_range.start
-            && self.high_range.start <= self.high_range.end)
+        if !(self.low_range().start <= self.low_range().end
+            && self.low_range().end < self.ideal_range().start
+            && self.ideal_range().start <= self.ideal_range().end
+            && self.ideal_range().end < self.high_range().start
+            && self.high_range().start <= self.high_range().end)
         {
             return Err(AtmosError::ConfigError(config::ConfigError::Message(
                 "Invalid humidity ranges".into(),
