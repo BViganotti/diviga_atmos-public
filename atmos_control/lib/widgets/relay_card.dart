@@ -2,33 +2,36 @@ import 'package:flutter/material.dart';
 
 class RelayCard extends StatelessWidget {
   final String title;
-  final bool isOn;
+  final String status;
   final VoidCallback onToggle;
+  final IconData icon;
 
   const RelayCard({
     Key? key,
     required this.title,
-    required this.isOn,
+    required this.status,
     required this.onToggle,
+    required this.icon,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            Switch(
-              value: isOn,
-              onChanged: (_) => onToggle(),
-            ),
-          ],
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).primaryColor),
+        title: Text(title),
+        trailing: Switch(
+          value: status == 'On',
+          onChanged: (_) => onToggle(),
+          activeColor: Theme.of(context).primaryColor,
+        ),
+        subtitle: Text(
+          'Status: $status',
+          style: TextStyle(
+            color: status == 'On' ? Colors.green : Colors.red,
+          ),
         ),
       ),
     );

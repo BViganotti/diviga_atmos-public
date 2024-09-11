@@ -10,7 +10,7 @@ pub async fn monitor_atmosphere(
     sd: AccessSharedData,
     settings: Settings,
 ) -> Result<(), AtmosError> {
-    let mut interval = interval(Duration::from_secs(settings.polling_interval));
+    let mut interval = interval(Duration::from_secs(settings.polling_interval.duration));
 
     loop {
         interval.tick().await;

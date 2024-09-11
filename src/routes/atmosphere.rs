@@ -67,7 +67,7 @@ pub async fn get_full_atmospheric_data(sd: web::Data<AccessSharedData>) -> HttpR
         heater_turn_off_datetime: sd.heater_turn_off_datetime().to_string(),
     };
     let values = serde_json::to_string(&values).unwrap();
-
+    println!("Sending JSON response: {}", values);
     HttpResponse::Ok()
         .content_type(ContentType::json())
         .body(values)

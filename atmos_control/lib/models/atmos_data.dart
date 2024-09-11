@@ -37,22 +37,34 @@ class AtmosData {
 
   factory AtmosData.fromJson(Map<String, dynamic> json) {
     return AtmosData(
-      averageTemp: json['average_temp'],
-      averageHumidity: json['average_humidity'],
-      lastReadingTime: json['last_reading_time'],
-      tempOne: json['temp_one'],
-      humidityOne: json['humidity_one'],
-      tempTwo: json['temp_two'],
-      humidityTwo: json['humidity_two'],
-      fridgeStatus: json['fridge_status'],
-      fridgeTurnOnTime: json['fridge_turn_on_datetime'],
-      fridgeTurnOffTime: json['fridge_turn_off_datetime'],
-      humidifierStatus: json['humidifier_status'],
-      humidifierTurnOnTime: json['humidifier_turn_on_datetime'],
-      humidifierTurnOffTime: json['humidifier_turn_off_datetime'],
-      dehumidifierStatus: json['dehumidifier_status'],
-      dehumidifierTurnOnTime: json['dehumidifier_turn_on_datetime'],
-      dehumidifierTurnOffTime: json['dehumidifier_turn_off_datetime'],
+      averageTemp: json['average_temp']?.toDouble() ?? 0.0,
+      averageHumidity: json['average_humidity']?.toDouble() ?? 0.0,
+      lastReadingTime: json['last_reading_time'] ?? '',
+      tempOne: json['temp_1']?.toDouble() ?? 0.0,
+      humidityOne: json['humidity_1']?.toDouble() ?? 0.0,
+      tempTwo: json['temp_2']?.toDouble() ?? 0.0,
+      humidityTwo: json['humidity_2']?.toDouble() ?? 0.0,
+      fridgeStatus: json['fridge_status'] == 'On',
+      fridgeTurnOnTime: json['fridge_turn_on_datetime'] ?? '',
+      fridgeTurnOffTime: json['fridge_turn_off_datetime'] ?? '',
+      humidifierStatus: json['humidifier_status'] == 'On',
+      humidifierTurnOnTime: json['humidifier_turn_on_datetime'] ?? '',
+      humidifierTurnOffTime: json['humidifier_turn_off_datetime'] ?? '',
+      dehumidifierStatus: json['dehumidifier_status'] == 'On',
+      dehumidifierTurnOnTime: json['dehumidifier_turn_on_datetime'] ?? '',
+      dehumidifierTurnOffTime: json['dehumidifier_turn_off_datetime'] ?? '',
     );
+  }
+
+  String formattedLastReadingTime() {
+    try {
+      // Remove the fractional seconds and timezone offset
+      String sanitizedDate = lastReadingTime.split('.')[0];
+      DateTime parsedDate = DateTime.parse(sanitizedDate);
+      return "${parsedDate.toLocal()}";
+    } catch (e) {
+      print('Error parsing date: $e');
+      return lastReadingTime; // Return the original string if parsing fails
+    }
   }
 }

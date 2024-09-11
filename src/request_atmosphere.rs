@@ -12,6 +12,6 @@ pub async fn request_atmosphere(
         if let Err(e) = read_atmosphere::read_atmosphere_from_sensors(sd, influx_client).await {
             log::error!("Error reading atmosphere data: {:?}", e);
         }
-        sleep(Duration::from_secs(settings.sensor_read_cooldown)).await;
+        sleep(Duration::from_secs(settings.sensor_read_cooldown.duration)).await;
     }
 }

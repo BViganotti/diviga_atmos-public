@@ -16,6 +16,9 @@ class AtmosProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('Error fetching atmos data: $e');
+      // Optionally, you can set an error state here
+      // _error = e.toString();
+      notifyListeners();
     }
   }
 

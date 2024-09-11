@@ -1,7 +1,7 @@
 [temperature]
 low_range_start = -20.0
-low_range_end = 11.0
-high_range_start = 14.0
+low_range_end = 10.9  # Changed from 11.0
+high_range_start = 14.1  # Changed from 14.0
 high_range_end = 100.0
 ideal_range_start = 11.0
 ideal_range_end = 14.0
@@ -9,10 +9,10 @@ fridge_cooldown_duration = 300
 
 [humidity]
 low_range_start = 0.0
-low_range_end = 60.0
-high_range_start = 80.0
+low_range_end = 59.9  # Changed from 60.0
+high_range_start = 80.1  # Changed from 80.0
 high_range_end = 100.0
-ideal_range_start = 75.0
+ideal_range_start = 60.0
 ideal_range_end = 80.0
 humidifier_cooldown_duration = 300
 humidifier_activation_duration = 1

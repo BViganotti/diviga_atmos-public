@@ -12,8 +12,8 @@ pub struct Settings {
     pub influxdb: InfluxDbSettings,
     pub relay_pins: RelayPinSettings,
     pub webserver: WebserverSettings,
-    pub sensor_read_cooldown: u64,
-    pub polling_interval: u64,
+    pub sensor_read_cooldown: SensorReadCooldownSettings,
+    pub polling_interval: PollingIntervalSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -158,4 +158,14 @@ impl fmt::Display for WebserverSettings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Webserver: {:?}", self)
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SensorReadCooldownSettings {
+    pub duration: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PollingIntervalSettings {
+    pub duration: u64,
 }
