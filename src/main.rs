@@ -21,7 +21,9 @@ use crate::initialization::{initialize_relay_pins, initialize_shared_data};
 use crate::request_atmosphere::request_atmosphere;
 use influx_client::InfluxClient;
 
-#[actix_web::main]
+use tokio;
+
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
@@ -78,11 +80,9 @@ async fn main() -> std::io::Result<()> {
     let server = webserver::run_app(webserver_data)?;
 
     // Run the server
-    tokio::runtime::Runtime::new()?.block_on(async {
-        if let Err(e) = server.await {
-            eprintln!("Server error: {}", e);
-        }
-    });
+    if let Err(e) = server.await {
+        eprintln!("Server error: {}", e);
+    }
 
     atmosphere_handle.await?;
 

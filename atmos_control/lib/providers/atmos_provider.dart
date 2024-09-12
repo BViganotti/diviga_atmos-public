@@ -22,12 +22,12 @@ class AtmosProvider with ChangeNotifier {
     }
   }
 
-  Future<void> toggleRelay(String device) async {
+  Future<void> changeRelayStatus(String device) async {
     try {
-      await _service.toggleRelay(device);
+      await _service.changeRelayStatus(device);
       await fetchAtmosData();
     } catch (e) {
-      print('Error toggling $device: $e');
+      print('Error changing $device status: $e');
     }
   }
 }

@@ -27,10 +27,39 @@ class AtmosService {
      }
    }
 
-  Future<void> toggleRelay(String device) async {
-    final response = await http.post(Uri.parse('$baseUrl/api/devices/$device/toggle'));
-    if (response.statusCode != 200) {
-      throw Exception('Failed to toggle $device');
+  Future<Map<String, dynamic>> changeRelayStatus(String device) async {
+    String endpoint;
+    switch (device.toLowerCase()) {
+      case 'fridge':
+        endpoint = '/change_fridge_status';
+        break;
+      case 'humidifier':
+        endpoint = '/change_humidifier_status';
+        break;
+      case 'dehumidifier':
+        endpoint = '/change_dehumidifier_status';
+        break;
+      case 'ventilator':
+        endpoint = '/change_ventilator_status';
+        break;
+      default:
+        throw ArgumentError('Invalid device: $device');
+    }
+
+    try {
+      final response = await http.post(Uri.parse('$baseUrl$endpoint'));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Server returned ${response.statusCode}: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      print('Error changing relay status: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
     }
   }
 }
