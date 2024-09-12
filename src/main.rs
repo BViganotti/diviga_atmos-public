@@ -1,5 +1,6 @@
 pub mod config;
 pub mod error;
+pub mod initialization;
 pub mod mock_relay_ctrl;
 pub mod monitor_atmosphere;
 pub mod read_atmosphere;
@@ -11,14 +12,12 @@ pub mod ventilation;
 pub mod webserver;
 use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
-use crate::shared_data::SharedData;
 use dotenv::dotenv;
 use relay_ctrl::RelayStatus;
 use std::sync::Arc;
 use std::sync::Mutex;
-use time::macros::offset;
-use time::OffsetDateTime;
 mod influx_client;
+use crate::initialization::{initialize_relay_pins, initialize_shared_data};
 use crate::request_atmosphere::request_atmosphere;
 use influx_client::InfluxClient;
 
@@ -31,43 +30,9 @@ async fn main() -> std::io::Result<()> {
     // Load configuration
     let settings = Settings::new().expect("Failed to load configuration");
 
-    // Initialize a struct that will be our "global" data, which allows safe access from every thread
-    let common_data = SharedData::new(
-        0,
-        13.0,
-        80.0,
-        13.0,
-        80.0,
-        0.0,
-        80.0,
-        0.0,
-        RelayStatus::Off,
-        RelayStatus::Off,
-        RelayStatus::Off,
-        RelayStatus::Off,
-        RelayStatus::Off,
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-        OffsetDateTime::UNIX_EPOCH.to_offset(offset!(+1)),
-    );
-
-    // setting all the pins to false just in case
-    for pin in &[
-        settings.relay_pins.humidifier,
-        settings.relay_pins.dehumidifier,
-        settings.relay_pins.ventilator_or_heater,
-        settings.relay_pins.fridge,
-    ] {
-        relay_ctrl::change_relay_status(*pin, RelayStatus::Off)
-            .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-    }
+    // Initialize shared data and relay pins
+    let common_data = initialize_shared_data();
+    initialize_relay_pins(&settings).await?;
 
     // The wrapper around our shared data that gives it safe access across threads
     let shared_data = AccessSharedData {
@@ -110,10 +75,13 @@ async fn main() -> std::io::Result<()> {
 
     // Clone for webserver task
     let webserver_data = shared_data.clone();
-    let webserver_settings = settings.clone();
-    tokio::spawn(async move {
-        let server_future = webserver::run_app(&webserver_data, &webserver_settings);
-        server_future.await
+    let server = webserver::run_app(webserver_data)?;
+
+    // Run the server
+    tokio::runtime::Runtime::new()?.block_on(async {
+        if let Err(e) = server.await {
+            eprintln!("Server error: {}", e);
+        }
     });
 
     atmosphere_handle.await?;

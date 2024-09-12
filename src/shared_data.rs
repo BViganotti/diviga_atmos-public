@@ -45,6 +45,10 @@ pub struct SharedData {
     dehumidifier_turn_on_datetime: OffsetDateTime,
     /// Timestamp when the dehumidifier was last turned off
     dehumidifier_turn_off_datetime: OffsetDateTime,
+    /// Timestamp when the ventilator was last turned on
+    ventilator_turn_on_datetime: OffsetDateTime,
+    /// Timestamp when the ventilator was last turned off
+    ventilator_turn_off_datetime: OffsetDateTime,
     /// Timestamp when the heater was last turned on
     heater_turn_on_datetime: OffsetDateTime,
     /// Timestamp when the heater was last turned off
@@ -75,6 +79,8 @@ impl SharedData {
         dehumidifier_turn_off_datetime: OffsetDateTime,
         heater_turn_on_datetime: OffsetDateTime,
         heater_turn_off_datetime: OffsetDateTime,
+        ventilator_turn_on_datetime: OffsetDateTime,
+        ventilator_turn_off_datetime: OffsetDateTime,
     ) -> SharedData {
         SharedData {
             polling_iterations,
@@ -97,6 +103,8 @@ impl SharedData {
             humidifier_turn_off_datetime,
             dehumidifier_turn_on_datetime,
             dehumidifier_turn_off_datetime,
+            ventilator_turn_on_datetime,
+            ventilator_turn_off_datetime,
             heater_turn_on_datetime,
             heater_turn_off_datetime,
         }
@@ -297,6 +305,26 @@ impl AccessSharedData {
     pub fn set_dehumidifier_turn_off_datetime(&self, dt: OffsetDateTime) {
         let mut lock = self.sd.lock().unwrap();
         lock.dehumidifier_turn_off_datetime = dt;
+    }
+
+    pub fn ventilator_turn_on_datetime(&self) -> OffsetDateTime {
+        let lock = self.sd.lock().unwrap();
+        lock.ventilator_turn_on_datetime
+    }
+
+    pub fn set_ventilator_turn_on_datetime(&self, dt: OffsetDateTime) {
+        let mut lock = self.sd.lock().unwrap();
+        lock.ventilator_turn_on_datetime = dt;
+    }
+
+    pub fn ventilator_turn_off_datetime(&self) -> OffsetDateTime {
+        let lock = self.sd.lock().unwrap();
+        lock.ventilator_turn_off_datetime
+    }
+
+    pub fn set_ventilator_turn_off_datetime(&self, dt: OffsetDateTime) {
+        let mut lock = self.sd.lock().unwrap();
+        lock.ventilator_turn_off_datetime = dt;
     }
 
     pub fn heater_turn_on_datetime(&self) -> OffsetDateTime {

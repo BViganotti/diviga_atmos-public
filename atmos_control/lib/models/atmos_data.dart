@@ -15,6 +15,12 @@ class AtmosData {
   final bool dehumidifierStatus;
   final String dehumidifierTurnOnTime;
   final String dehumidifierTurnOffTime;
+  final bool heaterStatus;
+  final String heaterTurnOnTime;
+  final String heaterTurnOffTime;
+  final bool ventilatorStatus;
+  final String ventilatorTurnOnTime;
+  final String ventilatorTurnOffTime;
 
   AtmosData({
     required this.averageTemp,
@@ -33,6 +39,12 @@ class AtmosData {
     required this.dehumidifierStatus,
     required this.dehumidifierTurnOnTime,
     required this.dehumidifierTurnOffTime,
+    required this.heaterStatus,
+    required this.heaterTurnOnTime,
+    required this.heaterTurnOffTime,
+    required this.ventilatorStatus,
+    required this.ventilatorTurnOnTime,
+    required this.ventilatorTurnOffTime,
   });
 
   factory AtmosData.fromJson(Map<String, dynamic> json) {
@@ -53,6 +65,12 @@ class AtmosData {
       dehumidifierStatus: json['dehumidifier_status'] == 'On',
       dehumidifierTurnOnTime: json['dehumidifier_turn_on_datetime'] ?? '',
       dehumidifierTurnOffTime: json['dehumidifier_turn_off_datetime'] ?? '',
+      heaterStatus: json['heater_status'] == 'On',
+      heaterTurnOnTime: json['heater_turn_on_datetime'] ?? '',
+      heaterTurnOffTime: json['heater_turn_off_datetime'] ?? '',
+      ventilatorStatus: json['ventilator_status'] == 'On',
+      ventilatorTurnOnTime: json['ventilator_turn_on_datetime'] ?? '',
+      ventilatorTurnOffTime: json['ventilator_turn_off_datetime'] ?? '',
     );
   }
 

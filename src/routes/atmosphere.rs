@@ -1,5 +1,5 @@
 use crate::{relay_ctrl::RelayStatus, AccessSharedData};
-use actix_web::{http::header::ContentType, web, HttpResponse};
+use actix_web::{get, http::header::ContentType, web, HttpResponse};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct AvgAtmosphereData {
@@ -7,6 +7,7 @@ pub struct AvgAtmosphereData {
     humidity: f32,
 }
 
+#[get("/atmosphere")]
 pub async fn get_atmosphere(sd: web::Data<AccessSharedData>) -> HttpResponse {
     let values = AvgAtmosphereData {
         temperature: sd.average_temp(),
@@ -43,6 +44,7 @@ pub struct FullData {
     heater_turn_off_datetime: String,
 }
 
+#[get("/api/atmosphere/full")]
 pub async fn get_full_atmospheric_data(sd: web::Data<AccessSharedData>) -> HttpResponse {
     let values = FullData {
         temp_1: sd.temp_one(),

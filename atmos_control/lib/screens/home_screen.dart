@@ -80,6 +80,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   onToggle: () => atmosProvider.toggleRelay('dehumidifier'),
                   icon: Icons.water_drop_outlined,
                 ),
+                RelayCard(
+                  title: 'Heater',
+                  status: atmosData.heaterStatus ? 'On' : 'Off',
+                  onToggle: () => atmosProvider.toggleRelay('heater'),
+                  icon: Icons.ac_unit,
+                ),
+                RelayCard(
+                  title: 'Ventilator',
+                  status: atmosData.ventilatorStatus ? 'On' : 'Off',
+                  onToggle: () => atmosProvider.toggleRelay('ventilator'),
+                  icon: Icons.air,
+                ),
                 SizedBox(height: 16),
                 Text(
                   'Last sensor poll: ${atmosData.formattedLastReadingTime()}',
