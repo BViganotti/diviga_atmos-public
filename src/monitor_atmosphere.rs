@@ -1,8 +1,7 @@
 use crate::{
     error::AtmosError, relay_ctrl::change_relay_status, AccessSharedData, RelayStatus, Settings,
 };
-use futures::future::join_all;
-use log::{debug, error, info};
+use log::{debug, info};
 use time::OffsetDateTime;
 use tokio::time::{interval, Duration};
 
@@ -20,17 +19,12 @@ pub async fn monitor_atmosphere(
 
         if sd.polling_iterations() > 4 {
             let now = OffsetDateTime::now_utc();
-            let tasks = vec![
-                tokio::spawn(handle_fridge(sd.clone(), now, settings.clone())),
-                tokio::spawn(handle_dehumidifier(sd.clone(), now, settings.clone())),
-                tokio::spawn(handle_humidifier(sd.clone(), now, settings.clone())),
-            ];
 
-            for result in join_all(tasks).await {
-                if let Err(e) = result {
-                    error!("Task error: {:?}", e);
-                }
-            }
+            // Handle devices sequentially
+            handle_fridge(&sd, now, &settings).await?;
+            handle_dehumidifier(&sd, now, &settings).await?;
+            handle_humidifier(&sd, now, &settings).await?;
+            handle_ventilator(&sd, now, &settings).await?;
         } else {
             debug!(
                 "Not enough polling iterations yet: {}",
@@ -43,69 +37,62 @@ pub async fn monitor_atmosphere(
 }
 
 async fn handle_fridge(
-    sd: AccessSharedData,
+    sd: &AccessSharedData,
     now: OffsetDateTime,
-    settings: Settings,
+    settings: &Settings,
 ) -> Result<(), AtmosError> {
     let average_temp = sd.average_temp();
-    let target_state = if settings.temperature.high_range().contains(&average_temp) {
-        RelayStatus::On
+    if settings.temperature.high_range().contains(&average_temp) {
+        let time_since_last_activation = now - sd.fridge_turn_off_datetime();
+        if time_since_last_activation
+            >= Duration::from_secs(settings.temperature.fridge_cooldown_duration)
+        {
+            info!("fridge_control() -> activating fridge");
+            change_relay_status(settings.relay_pins.fridge, RelayStatus::On).await?;
+            sd.set_fridge_status(RelayStatus::On);
+            sd.set_fridge_turn_on_datetime(now);
+        } else {
+            info!("fridge_control() -> activation prevented due to cooldown period");
+        }
     } else if settings.temperature.ideal_range().contains(&average_temp)
         || settings.temperature.low_range().contains(&average_temp)
     {
-        RelayStatus::Off
-    } else {
-        return Ok(());
-    };
-
-    handle_relay_state(
-        &sd,
-        now,
-        target_state,
-        "fridge",
-        &settings,
-        settings.relay_pins.fridge,
-        sd.fridge_status(),
-        sd.fridge_turn_on_datetime(),
-        sd.fridge_turn_off_datetime(),
-        |sd, status| sd.set_fridge_status(status),
-        settings.temperature.fridge_cooldown_duration,
-    )
-    .await
+        if sd.fridge_status() == RelayStatus::On {
+            info!("fridge_control() -> deactivating fridge");
+            change_relay_status(settings.relay_pins.fridge, RelayStatus::Off).await?;
+            sd.set_fridge_status(RelayStatus::Off);
+            sd.set_fridge_turn_off_datetime(now);
+        }
+    }
+    Ok(())
 }
 
 async fn handle_dehumidifier(
-    sd: AccessSharedData,
+    sd: &AccessSharedData,
     now: OffsetDateTime,
-    settings: Settings,
+    settings: &Settings,
 ) -> Result<(), AtmosError> {
     let average_humidity = sd.average_humidity();
-    let target_state = if settings.humidity.high_range().contains(&average_humidity) {
-        RelayStatus::On
-    } else {
-        RelayStatus::Off
-    };
-
-    handle_relay_state(
-        &sd,
-        now,
-        target_state,
-        "dehumidifier",
-        &settings,
-        settings.relay_pins.dehumidifier,
-        sd.dehumidifier_status(),
-        sd.dehumidifier_turn_on_datetime(),
-        sd.dehumidifier_turn_off_datetime(),
-        |sd, status| sd.set_dehumidifier_status(status),
-        0, // Assuming no cooldown for dehumidifier
-    )
-    .await
+    if settings.humidity.high_range().contains(&average_humidity) {
+        info!("dehumidifier_control() -> activating dehumidifier");
+        change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::On).await?;
+        sd.set_dehumidifier_status(RelayStatus::On);
+        sd.set_dehumidifier_turn_on_datetime(now);
+    } else if !settings.humidity.high_range().contains(&average_humidity) {
+        if sd.dehumidifier_status() == RelayStatus::On {
+            info!("dehumidifier_control() -> deactivating dehumidifier");
+            change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::Off).await?;
+            sd.set_dehumidifier_status(RelayStatus::Off);
+            sd.set_dehumidifier_turn_off_datetime(now);
+        }
+    }
+    Ok(())
 }
 
 async fn handle_humidifier(
-    sd: AccessSharedData,
+    sd: &AccessSharedData,
     now: OffsetDateTime,
-    settings: Settings,
+    settings: &Settings,
 ) -> Result<(), AtmosError> {
     let average_humidity = sd.average_humidity();
     if settings.humidity.low_range().contains(&average_humidity) {
@@ -131,47 +118,32 @@ async fn handle_humidifier(
     Ok(())
 }
 
-async fn handle_relay_state(
+async fn handle_ventilator(
     sd: &AccessSharedData,
     now: OffsetDateTime,
-    target_state: RelayStatus,
-    device: &str,
-    _settings: &Settings,
-    pin_number: u8,
-    current_status: RelayStatus,
-    turn_on_datetime: OffsetDateTime,
-    turn_off_datetime: OffsetDateTime,
-    set_status: impl Fn(&AccessSharedData, RelayStatus),
-    cooldown_duration: u64,
+    settings: &Settings,
 ) -> Result<(), AtmosError> {
-    info!(
-        "{}_control() -> current state: {:?}, target state: {:?}",
-        device, current_status, target_state
-    );
-
-    if current_status != target_state {
-        let time_since_last_change = if target_state == RelayStatus::On {
-            now - turn_off_datetime
-        } else {
-            now - turn_on_datetime
-        };
-
-        if time_since_last_change.whole_seconds() as u64 > cooldown_duration {
+    if sd.ventilator_status() == RelayStatus::Off {
+        let time_since_last_activation = now - sd.ventilator_turn_off_datetime();
+        if time_since_last_activation >= Duration::from_secs(settings.ventilation.interval) {
             info!(
-                "{}_control() -> changing state to {:?}",
-                device, target_state
+                "ventilator_control() -> activating ventilator for {} second(s)",
+                settings.ventilation.duration
             );
-            change_relay_status(pin_number, target_state).await?;
-            set_status(sd, target_state);
+            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::On).await?;
+            sd.set_ventilator_status(RelayStatus::On);
+            sd.set_ventilator_turn_on_datetime(now);
+
+            tokio::time::sleep(Duration::from_secs(settings.ventilation.duration)).await;
+
+            info!("ventilator_control() -> deactivating ventilator");
+            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::Off).await?;
+            sd.set_ventilator_status(RelayStatus::Off);
+            sd.set_ventilator_turn_off_datetime(now);
         } else {
-            info!(
-                "{}_control() -> waiting {:.2} minutes before changing state",
-                device,
-                time_since_last_change.whole_minutes() as f64
-            );
+            info!("ventilator_control() -> activation prevented due to interval period");
         }
     }
-
     Ok(())
 }
 
@@ -269,7 +241,7 @@ mod tests {
 
         // Test when temperature is in high range
         sd.set_average_temp(26.0);
-        handle_fridge(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_fridge(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -279,7 +251,7 @@ mod tests {
 
         // Test when temperature is in ideal range
         sd.set_average_temp(22.0);
-        handle_fridge(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_fridge(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -298,7 +270,7 @@ mod tests {
 
         // Test when humidity is in high range
         sd.set_average_humidity(70.0);
-        handle_dehumidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_dehumidifier(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -308,7 +280,7 @@ mod tests {
 
         // Test when humidity is not in high range
         sd.set_average_humidity(50.0);
-        handle_dehumidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_dehumidifier(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -329,7 +301,7 @@ mod tests {
 
         // Test when humidity is in low range
         sd.set_average_humidity(30.0);
-        handle_humidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_humidifier(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -339,7 +311,7 @@ mod tests {
 
         // Test when humidity is not in low range
         sd.set_average_humidity(50.0);
-        handle_humidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
+        handle_humidifier(&sd, OffsetDateTime::now_utc(), &settings)
             .await
             .unwrap();
         assert_eq!(
@@ -381,5 +353,31 @@ mod tests {
         sd.set_average_temp(26.0);
         update_atmosphere_quality_index(&sd, &settings);
         assert_eq!(sd.atmosphere_quality_index(), 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_handle_ventilator() {
+        let sd = create_test_shared_data();
+        let mut settings = Settings::new().unwrap();
+        settings.ventilation.interval = 0;
+        settings.ventilation.duration = 1;
+        settings.relay_pins.ventilator_or_heater = 4;
+
+        // Test ventilator activation
+        handle_ventilator(&sd, OffsetDateTime::now_utc(), &settings)
+            .await
+            .unwrap();
+        assert_eq!(
+            get_mock_relay_status(settings.relay_pins.ventilator_or_heater),
+            RelayStatus::Off
+        );
+        assert_eq!(sd.ventilator_status(), RelayStatus::Off);
+
+        // Test ventilator not activating due to being already on
+        sd.set_ventilator_status(RelayStatus::On);
+        handle_ventilator(&sd, OffsetDateTime::now_utc(), &settings)
+            .await
+            .unwrap();
+        assert_eq!(sd.ventilator_status(), RelayStatus::On);
     }
 }

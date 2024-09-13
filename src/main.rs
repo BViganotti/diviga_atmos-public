@@ -8,7 +8,6 @@ pub mod relay_ctrl;
 pub mod request_atmosphere;
 pub mod routes;
 pub mod shared_data;
-pub mod ventilation;
 pub mod webserver;
 use crate::config::Settings;
 use crate::shared_data::AccessSharedData;
@@ -55,13 +54,6 @@ async fn main() -> std::io::Result<()> {
             &atmosphere_influx_client,
         )
         .await;
-    });
-
-    // Clone for ventilation task
-    let ventilation_data = shared_data.clone();
-    let ventilation_settings = settings.clone();
-    tokio::spawn(async move {
-        ventilation::ventilation_loop(&ventilation_data, &ventilation_settings).await;
     });
 
     // Clone for atmosphere monitoring task
