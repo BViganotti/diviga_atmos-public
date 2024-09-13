@@ -122,8 +122,4 @@ Run the test suite with:
 ```
 cargo test
 ```
-
-## Contributing
-
-We welcome contributions to Atmos! If you have suggestions or improvements, please open an issue or submit a pull request.
  
