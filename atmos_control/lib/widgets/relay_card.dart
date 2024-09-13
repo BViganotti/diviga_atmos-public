@@ -7,12 +7,12 @@ class RelayCard extends StatelessWidget {
   final IconData icon;
 
   const RelayCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.status,
     required this.onToggle,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

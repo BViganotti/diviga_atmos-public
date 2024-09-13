@@ -7,12 +7,12 @@ class SensorCard extends StatelessWidget {
   final IconData icon;
 
   const SensorCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.unit,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,21 +20,21 @@ class SensorCard extends StatelessWidget {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(icon, color: Theme.of(context).primaryColor),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               '$value $unit',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(

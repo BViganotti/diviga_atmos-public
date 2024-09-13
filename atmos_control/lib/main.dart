@@ -5,10 +5,12 @@ import 'services/atmos_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -19,9 +21,9 @@ class MyApp extends StatelessWidget {
         title: 'Atmos Control',
         theme: ThemeData.dark().copyWith(
           primaryColor: Colors.teal,
-          scaffoldBackgroundColor: Color(0xFF121212),
-          cardColor: Color(0xFF1E1E1E),
-          appBarTheme: AppBarTheme(
+          scaffoldBackgroundColor: const Color(0xFF121212),
+          cardColor: const Color(0xFF1E1E1E),
+          appBarTheme: const AppBarTheme(
             backgroundColor: Color(0xFF1E1E1E),
             elevation: 0,
           ),

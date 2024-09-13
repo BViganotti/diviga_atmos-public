@@ -22,18 +22,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Atmos Control', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Atmos Control',
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: Consumer<AtmosProvider>(
         builder: (context, atmosProvider, child) {
           final atmosData = atmosProvider.atmosData;
           if (atmosData == null) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
           return RefreshIndicator(
             onRefresh: () => atmosProvider.fetchAtmosData(),
             child: ListView(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               children: [
                 Row(
                   children: [
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.thermostat,
                       ),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: SensorCard(
                         title: 'Humidity',
@@ -56,12 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'Appliances',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 RelayCard(
                   title: 'Fridge',
                   status: atmosData.fridgeStatus ? 'On' : 'Off',
@@ -77,7 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 RelayCard(
                   title: 'Dehumidifier',
                   status: atmosData.dehumidifierStatus ? 'On' : 'Off',
-                  onToggle: () => atmosProvider.changeRelayStatus('dehumidifier'),
+                  onToggle: () =>
+                      atmosProvider.changeRelayStatus('dehumidifier'),
                   icon: Icons.water_drop_outlined,
                 ),
                 RelayCard(
@@ -92,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onToggle: () => atmosProvider.changeRelayStatus('ventilator'),
                   icon: Icons.air,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'Last sensor poll: ${atmosData.formattedLastReadingTime()}',
                   style: Theme.of(context).textTheme.bodySmall,
