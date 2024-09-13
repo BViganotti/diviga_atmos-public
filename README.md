@@ -1,87 +1,129 @@
-Atmospheric control system
+# Atmos: Atmospheric Control System
 
-This project is a home project that monitors the temperature and humidity level in an enclosed space. It is running on a raspberry pi zero w, a 4 channel relay board, Rust, shady soldering and even shadier "webinterface" ( single page of rendered pure HTML, and i mean PURE because there is not even some CSS there ( i was in a hurry )).
-The code control the turning on and off a multiple elements, a fridge, a dehumidifier, a fan and a humidifier ( and optionally a heater in winter ). This is all to make home made charcuterie as it is something i'm very fond of. Right now i'm in the process of making Prosciutto.
+![Atmos Logo](path/to/logo.png) <!-- Add a logo if you have one -->
 
-For this project i went with Rust as i really love the language and was looking for an opportunity ( at the time ) to learn the language. After a few days i went from loving the language to really loving the language and its ecosystem. From the compilation based checks, error reporting, to the cargo ecosystem, incredible libs like cross-rs which is a godsent for cross compilation when you come from C++, Rust is truely amazing.
+## Table of Contents
 
+- [Overview](#overview)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [API Endpoints](#api-endpoints)
+- [Development](#development)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
 
+## Overview
 
-Atmos Project Documentation
-Project Overview
-Atmos is a Rust-based atmospheric control system designed to monitor and manage environmental conditions. It uses various sensors and relays to control temperature, humidity, and ventilation in a controlled environment.
-Project Structure
+Atmos is a sophisticated atmospheric control system designed to monitor and manage environmental conditions. Built with Rust, it leverages various sensors and relays to control temperature, humidity, and ventilation in a controlled environment. This project is ideal for applications such as home-made charcuterie, wine cellars, or any environment requiring precise atmospheric control.
+
+## Features
+
+- Real-time monitoring of temperature and humidity
+- Automated control of cooling, heating, humidification, and dehumidification
+- Web-based API for remote monitoring and control
+- Integration with InfluxDB for data storage and analysis
+- Configurable settings for different environmental requirements
+- Robust error handling and logging
+
+## Project Structure
+
 The project is organized into several modules, each responsible for specific functionalities:
-main.rs: The entry point of the application.
-config.rs: Handles configuration settings.
-error.rs: Defines custom error types.
-initialization.rs: Initializes shared data and relay pins.
-monitor_atmosphere.rs: Monitors and controls atmospheric conditions.
-read_atmosphere.rs: Reads data from atmospheric sensors.
-relay_ctrl.rs: Controls relay operations.
-request_atmosphere.rs: Handles atmospheric data requests.
-routes/: Contains API route handlers.
-shared_data.rs: Manages shared data across threads.
-ventilation.rs: Handles ventilation control.
-webserver.rs: Sets up and runs the web server.
-influx_client.rs: Manages InfluxDB interactions.
-Key Components
-Main Application Flow
-The main application flow is defined in main.rs:
 
-This function sets up the environment, initializes shared data and relay pins, and spawns several asynchronous tasks for atmosphere monitoring, ventilation control, and web server operation.
-Initialization
-The initialization.rs module handles the setup of shared data and relay pins:
+- [`src/main.rs`](src/main.rs): The entry point of the application.
+- [`src/config.rs`](src/config.rs): Handles configuration settings.
+- [`src/error.rs`](src/error.rs): Defines custom error types.
+- [`src/initialization.rs`](src/initialization.rs): Initializes shared data and relay pins.
+- [`src/monitor_atmosphere.rs`](src/monitor_atmosphere.rs): Monitors and controls atmospheric conditions.
+- [`src/read_atmosphere.rs`](src/read_atmosphere.rs): Reads data from atmospheric sensors.
+- [`src/relay_ctrl.rs`](src/relay_ctrl.rs): Controls relay operations.
+- [`src/request_atmosphere.rs`](src/request_atmosphere.rs): Handles atmospheric data requests.
+- [`src/routes/`](src/routes/): Contains API route handlers.
+- [`src/shared_data.rs`](src/shared_data.rs): Manages shared data across threads.
+- [`src/ventilation.rs`](src/ventilation.rs): Handles ventilation control.
+- [`src/webserver.rs`](src/webserver.rs): Sets up and runs the web server.
+- [`src/influx_client.rs`](src/influx_client.rs): Manages InfluxDB interactions.
 
-initialize_shared_data(): Creates and initializes the SharedData structure.
-initialize_relay_pins(): Sets all relay pins to their initial (off) state.
-Web Server
-The web server is set up in webserver.rs:
+## Installation
 
-This function creates an HTTP server with various routes for getting atmospheric data and controlling relays.
-Relay Control
-Relay control operations are handled in routes/relay_control.rs:
+1. Ensure you have Rust and Cargo installed. If not, install them from [rustup.rs](https://rustup.rs/).
 
-These functions handle HTTP POST requests to change the status of various relays (fridge, humidifier, dehumidifier, ventilator).
-Atmosphere Monitoring
-The monitor_atmosphere.rs module contains logic for monitoring and controlling atmospheric conditions:
-;
-This module includes functions for handling different aspects of atmosphere control, such as managing the fridge, humidifier, dehumidifier, and ventilator based on current conditions.
-InfluxDB Integration
-The influx_client.rs module handles interactions with InfluxDB for data storage:
+2. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/atmos.git
+   cd atmos
+   ```
 
-This module provides functionality to write atmosphere data to an InfluxDB database.
-Configuration
-The project uses environment variables and a configuration file for settings. The Settings struct in config.rs loads and stores these configurations.
-API Routes
-The project exposes several API routes:
-GET /api/atmosphere/full: Retrieves full atmospheric data.
-POST /change_fridge_status: Changes the fridge relay status.
-POST /change_humidifier_status: Changes the humidifier relay status.
-POST /change_dehumidifier_status: Changes the dehumidifier relay status.
-POST /change_ventilator_status: Changes the ventilator relay status.
-Error Handling
-Custom error types are defined in error.rs to handle various error scenarios specific to the Atmos system.
-Concurrency and Shared State
-The project uses Tokio for asynchronous operations and Arc<Mutex<>> for sharing state across multiple threads safely.
-Dependencies
-Key dependencies include:
-actix-web for the web server
-tokio for asynchronous runtime
-serde for serialization/deserialization
-influxdb for InfluxDB integration
-rppal for Raspberry Pi GPIO control
-For a full list of dependencies, refer to the Cargo.toml file.
-Running the Project
-To run the project:
-Ensure all dependencies are installed.
-Set up the necessary environment variables or configuration file.
-Run cargo run in the project directory.
-Testing
-The project includes unit tests, particularly for the atmosphere monitoring logic. Run tests using cargo test.
-Future Improvements
-Implement more comprehensive error handling and logging.
-Add more detailed documentation for each module.
-Implement a front-end interface for easier control and monitoring.
-Expand test coverage to include integration tests.
-This documentation provides an overview of the Atmos project structure and functionality. For more detailed information on specific functions or modules, refer to the inline comments in the respective files.
+3. Install dependencies:
+   ```
+   cargo build
+   ```
+
+4. Set up the necessary hardware (Raspberry Pi, sensors, relays) according to the [hardware setup guide](docs/hardware_setup.md).
+
+## Configuration
+
+1. Copy the example configuration file:
+   ```
+   cp config.example.toml config.toml
+   ```
+
+2. Edit `config.toml` to match your environment and hardware setup.
+
+3. Set up environment variables or use a `.env` file for sensitive information like database credentials.
+
+## Usage
+
+To compile the Atmos system:
+```
+CROSS_CONTAINER_OPTS="--platform linux/amd64" cross build --release --target arm-unknown-linux-gnueabihf
+```
+
+The system will start monitoring and controlling the atmosphere based on your configuration settings.
+
+## API Endpoints
+
+Atmos exposes several API endpoints for monitoring and control:
+
+- `GET /api/atmosphere/full`: Retrieves full atmospheric data.
+- `POST /change_fridge_status`: Changes the fridge relay status.
+- `POST /change_humidifier_status`: Changes the humidifier relay status.
+- `POST /change_dehumidifier_status`: Changes the dehumidifier relay status.
+- `POST /change_ventilator_status`: Changes the ventilator relay status.
+
+For detailed API documentation, refer to the [API Documentation](docs/api.md).
+
+## Development
+
+To set up the development environment:
+
+1. Install development dependencies:
+   ```
+   cargo install --path .
+   ```
+
+2. Run the project in development mode:
+   ```
+   cargo run
+   ```
+
+3. For hot-reloading during development, you can use `cargo-watch`:
+   ```
+   cargo install cargo-watch
+   cargo watch -x run
+   ```
+
+## Testing
+
+Run the test suite with:
+```
+cargo test
+```
+
+## Contributing
+
+We welcome contributions to Atmos! If you have suggestions or improvements, please open an issue or submit a pull request.
+ 
