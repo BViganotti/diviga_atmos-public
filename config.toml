@@ -16,6 +16,7 @@ ideal_range_start = 60.0
 ideal_range_end = 80.0
 humidifier_cooldown_duration = 300
 humidifier_activation_duration = 1
+dehumidifier_cooldown_duration = 60
 
 [ventilation]
 interval = 1800
@@ -40,3 +41,11 @@ duration = 45
 
 [polling_interval]
 duration = 60
+
+#[email]
+#smtp_server = "smtp.gmail.com"
+#smtp_port = 587
+#username = "diviga.exe@gmail.com"
+#password = "your_password"
+#from_address = "Atmos System <diviga.exe@gmail.com>"
+#to_address = "viganotti.exe@gmail.com"

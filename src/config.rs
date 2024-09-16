@@ -14,6 +14,7 @@ pub struct Settings {
     pub webserver: WebserverSettings,
     pub sensor_read_cooldown: SensorReadCooldownSettings,
     pub polling_interval: PollingIntervalSettings,
+    //pub email: EmailConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -51,6 +52,7 @@ pub struct HumiditySettings {
     pub ideal_range_end: f32,
     pub humidifier_cooldown_duration: u64,
     pub humidifier_activation_duration: u64,
+    pub dehumidifier_cooldown_duration: u64,
 }
 
 impl HumiditySettings {
@@ -169,3 +171,19 @@ pub struct SensorReadCooldownSettings {
 pub struct PollingIntervalSettings {
     pub duration: u64,
 }
+
+//#[derive(Deserialize, Clone)]
+//pub struct EmailConfig {
+//    pub smtp_server: String,
+//    pub smtp_port: u16,
+//    pub username: String,
+//    pub password: String,
+//    pub from_address: String,
+//    pub to_address: String,
+//}
+//
+//impl fmt::Display for EmailConfig {
+//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//        write!(f, "Email: {:?}", self)
+//    }
+//}

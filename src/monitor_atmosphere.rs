@@ -1,7 +1,8 @@
 use crate::{
     error::AtmosError, relay_ctrl::change_relay_status, AccessSharedData, RelayStatus, Settings,
 };
-use log::{debug, info};
+use futures::future::join_all;
+use log::{debug, error, info};
 use time::OffsetDateTime;
 use tokio::time::{interval, Duration};
 
@@ -20,11 +21,22 @@ pub async fn monitor_atmosphere(
         if sd.polling_iterations() > 4 {
             let now = OffsetDateTime::now_utc();
 
-            // Handle devices sequentially
-            handle_fridge(&sd, now, &settings).await?;
-            handle_dehumidifier(&sd, now, &settings).await?;
-            handle_humidifier(&sd, now, &settings).await?;
-            handle_ventilator(&sd, now, &settings).await?;
+            let handlers = vec![
+                handle_fridge(&sd, now, &settings),
+                handle_dehumidifier(&sd, now, &settings),
+                handle_humidifier(&sd, now, &settings),
+                handle_ventilator(&sd, now, &settings),
+            ];
+
+            let results = join_all(handlers).await;
+            match results {
+                Ok(_) => {
+                    info!("All device handlers completed successfully");
+                }
+                Err(e) => {
+                    error!("Error occurred while handling devices: {:?}", e);
+                }
+            }
         } else {
             debug!(
                 "Not enough polling iterations yet: {}",
@@ -35,6 +47,30 @@ pub async fn monitor_atmosphere(
         log_atmosphere_data(&sd);
     }
 }
+
+/*async fn handle_device_errors(e: &AtmosError, email_config: &EmailConfig) {
+    let (alert_type, details) = match e {
+        AtmosError::FridgeError(details) => ("Fridge Error", details),
+        AtmosError::DehumidifierError(details) => ("Dehumidifier Error", details),
+        AtmosError::HumidifierError(details) => ("Humidifier Error", details),
+        AtmosError::VentilatorError(details) => ("Ventilator Error", details),
+        AtmosError::RelayError(details) => ("Relay Error", details),
+        AtmosError::SensorError(details) => ("Sensor Error", details),
+        _ => ("Unexpected Error", &format!("{:?}", e)),
+    };
+
+    error!(
+        "{}: {}. Attempting to continue operation.",
+        alert_type, details
+    );
+
+    let (subject, body) = create_alert_message(alert_type, details);
+    if let Err(e) = send_email_notification(email_config, &subject, &body).await {
+        error!("Failed to send email notification: {}", e);
+    }
+
+    // Implement any necessary recovery or fallback logic here
+}*/
 
 async fn handle_fridge(
     sd: &AccessSharedData,
@@ -73,12 +109,18 @@ async fn handle_dehumidifier(
     settings: &Settings,
 ) -> Result<(), AtmosError> {
     let average_humidity = sd.average_humidity();
-    if settings.humidity.high_range().contains(&average_humidity) {
+    let time_since_last_activation = now - sd.dehumidifier_turn_off_datetime();
+    if time_since_last_activation
+        >= Duration::from_secs(settings.humidity.dehumidifier_cooldown_duration)
+    {
         info!("dehumidifier_control() -> activating dehumidifier");
         change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::On).await?;
         sd.set_dehumidifier_status(RelayStatus::On);
         sd.set_dehumidifier_turn_on_datetime(now);
-    } else if !settings.humidity.high_range().contains(&average_humidity) {
+    } else {
+        info!("dehumidifier_control() -> activation prevented due to cooldown period");
+    }
+    if !settings.humidity.high_range().contains(&average_humidity) {
         if sd.dehumidifier_status() == RelayStatus::On {
             info!("dehumidifier_control() -> deactivating dehumidifier");
             change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::Off).await?;

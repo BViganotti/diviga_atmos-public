@@ -21,3 +21,4 @@ influxdb = { version = "0.7.0", features = ["derive"] }
 paste = "1.0"
 futures = "0.3.30"
 lazy_static = "1.4.0"
+#lettre = "0.10"

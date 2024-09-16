@@ -12,6 +12,12 @@ pub enum AtmosError {
     InfluxDbError(InfluxDbError),
     JsonParseError(String),
     HttpError(String),
+    FridgeError(String),
+    DehumidifierError(String),
+    HumidifierError(String),
+    VentilatorError(String),
+    RelayError(String),
+    SensorError(String),
 }
 
 impl fmt::Display for AtmosError {
@@ -26,6 +32,12 @@ impl fmt::Display for AtmosError {
             AtmosError::InfluxDbError(e) => write!(f, "InfluxDB error: {}", e),
             AtmosError::JsonParseError(e) => write!(f, "JSON parse error: {}", e),
             AtmosError::HttpError(e) => write!(f, "HTTP error: {}", e),
+            AtmosError::FridgeError(e) => write!(f, "Fridge error: {}", e),
+            AtmosError::DehumidifierError(e) => write!(f, "Dehumidifier error: {}", e),
+            AtmosError::HumidifierError(e) => write!(f, "Humidifier error: {}", e),
+            AtmosError::VentilatorError(e) => write!(f, "Ventilator error: {}", e),
+            AtmosError::RelayError(e) => write!(f, "Relay error: {}", e),
+            AtmosError::SensorError(e) => write!(f, "Sensor error: {}", e),
         }
     }
 }
