@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import '../providers/atmos_provider.dart';
 
-class AtmosphereGraph extends StatefulWidget {
-  const AtmosphereGraph({super.key});
+class AtmosGraph extends StatefulWidget {
+  const AtmosGraph({super.key});
 
   @override
-  _AtmosphereGraphState createState() => _AtmosphereGraphState();
+  _AtmosGraphState createState() => _AtmosGraphState();
 }
 
-class _AtmosphereGraphState extends State<AtmosphereGraph> {
+class _AtmosGraphState extends State<AtmosGraph> {
   List<FlSpot> temperatureSpots = [];
   List<FlSpot> humiditySpots = [];
   String selectedTimeRange = 'Today';
@@ -22,25 +22,25 @@ class _AtmosphereGraphState extends State<AtmosphereGraph> {
   }
 
   Future<void> fetchData() async {
-    final response = await http.get(Uri.parse(
-        'http://192.168.0.216:8080/api/atmosphere/history?range=$selectedTimeRange'));
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+    final atmosProvider = Provider.of<AtmosProvider>(context, listen: false);
+    try {
+      final data = await atmosProvider.fetchAtmosHistory(selectedTimeRange);
       setState(() {
         temperatureSpots = data.asMap().entries.map((entry) {
           final index = entry.key.toDouble();
           final item = entry.value;
-          return FlSpot(index, item['average_temperature']);
+          return FlSpot(index, item.averageTemp);
         }).toList();
 
         humiditySpots = data.asMap().entries.map((entry) {
           final index = entry.key.toDouble();
           final item = entry.value;
-          return FlSpot(index, item['average_humidity']);
+          return FlSpot(index, item.averageHumidity);
         }).toList();
       });
-    } else {
-      throw Exception('Failed to load atmosphere data');
+    } catch (e) {
+      print('Error fetching atmosphere data: $e');
+      // You might want to show an error message to the user here
     }
   }
 
@@ -75,12 +75,12 @@ class _AtmosphereGraphState extends State<AtmosphereGraph> {
                 LineChartData(
                   gridData: const FlGridData(show: false),
                   titlesData: FlTitlesData(
-                    leftTitles:
-                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    bottomTitles:
-                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles:
-                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                     rightTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -134,7 +134,7 @@ class _LegendItem extends StatelessWidget {
   final Color color;
   final String label;
 
-  const _LegendItem({super.key, required this.color, required this.label});
+  const _LegendItem({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {

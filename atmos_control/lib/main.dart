@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => AtmosProvider(
-        AtmosService(baseUrl: 'http://192.168.0.216:8080'),
+        AtmosService('http://192.168.0.216:8080'),
       ),
       child: MaterialApp(
         title: 'Atmos Control',

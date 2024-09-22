@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/atmos_provider.dart';
 import '../widgets/sensor_card.dart';
 import '../widgets/relay_card.dart';
-import '../graph/atmos_graph.dart';
+import '../widgets/atmos_graph.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -70,32 +70,32 @@ class HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 RelayCard(
                   title: 'Fridge',
-                  status: atmosData.fridgeStatus ? 'On' : 'Off',
+                  relayStatus: atmosProvider.getRelayStatus('fridge'),
                   onToggle: () => atmosProvider.changeRelayStatus('fridge'),
                   icon: Icons.ac_unit,
                 ),
                 RelayCard(
                   title: 'Humidifier',
-                  status: atmosData.humidifierStatus ? 'On' : 'Off',
+                  relayStatus: atmosProvider.getRelayStatus('humidifier'),
                   onToggle: () => atmosProvider.changeRelayStatus('humidifier'),
                   icon: Icons.cloud,
                 ),
                 RelayCard(
                   title: 'Dehumidifier',
-                  status: atmosData.dehumidifierStatus ? 'On' : 'Off',
+                  relayStatus: atmosProvider.getRelayStatus('dehumidifier'),
                   onToggle: () =>
                       atmosProvider.changeRelayStatus('dehumidifier'),
                   icon: Icons.water_drop_outlined,
                 ),
                 RelayCard(
                   title: 'Heater',
-                  status: atmosData.heaterStatus ? 'On' : 'Off',
+                  relayStatus: atmosProvider.getRelayStatus('heater'),
                   onToggle: () => atmosProvider.changeRelayStatus('heater'),
                   icon: Icons.ac_unit,
                 ),
                 RelayCard(
                   title: 'Ventilator',
-                  status: atmosData.ventilatorStatus ? 'On' : 'Off',
+                  relayStatus: atmosProvider.getRelayStatus('ventilator'),
                   onToggle: () => atmosProvider.changeRelayStatus('ventilator'),
                   icon: Icons.air,
                 ),
@@ -105,7 +105,7 @@ class HomeScreenState extends State<HomeScreen> {
                   style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
-                const AtmosphereGraph(),
+                const AtmosGraph(),
               ],
             ),
           );

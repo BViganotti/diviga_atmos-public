@@ -10,7 +10,7 @@ use tokio::time::Duration;
 fn get_atmosphere_from_sensor() -> Result<String, AtmosError> {
     let output = Command::new("python3").arg("dht.py").output()?;
     let str_output = String::from_utf8_lossy(&output.stdout).to_string();
-    println!("{}", str_output);
+    //println!("{}", str_output);
     info!("Sensor output: {}", str_output);
     Ok(str_output)
 }
@@ -52,7 +52,7 @@ pub async fn read_atmosphere_from_sensors(sd: &AccessSharedData) -> Result<(), A
         .ok_or(AtmosError::SensorReadError("Invalid h2 value".into()))? as f32;
     let now = OffsetDateTime::now_utc().to_offset(offset!(+1));
 
-    println!("t1:{}, h1:{}, t2:{}, h2:{}", t1, h1, t2, h2);
+    //println!("t1:{}, h1:{}, t2:{}, h2:{}", t1, h1, t2, h2);
 
     sd.increment_polling_iterations();
     sd.set_temp_one(t1);

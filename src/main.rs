@@ -55,13 +55,11 @@ async fn main() -> Result<(), AtmosError> {
     // Clone for atmosphere monitoring task
     let monitoring_data = shared_data.clone();
     let monitoring_settings = settings.clone();
+    let sql_client = sqlite_client.clone();
     tokio::spawn(async move {
-        if let Err(e) = monitor_atmosphere::monitor_atmosphere(
-            monitoring_data,
-            monitoring_settings,
-            sqlite_client,
-        )
-        .await
+        if let Err(e) =
+            monitor_atmosphere::monitor_atmosphere(monitoring_data, monitoring_settings, sql_client)
+                .await
         {
             log::error!("Atmosphere monitoring error: {}", e);
         }
@@ -69,7 +67,9 @@ async fn main() -> Result<(), AtmosError> {
 
     // Clone for webserver task
     let webserver_data = shared_data.clone();
-    let server = webserver::run_app(webserver_data)?;
+    let webserver_settings = settings.clone();
+    let sqlit_client = sqlite_client.clone();
+    let server = webserver::run_app(webserver_data, webserver_settings, sqlit_client)?;
 
     // Run the server
     if let Err(e) = server.await {

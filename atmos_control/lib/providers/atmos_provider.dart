@@ -5,10 +5,12 @@ import '../services/atmos_service.dart';
 class AtmosProvider with ChangeNotifier {
   final AtmosService _service;
   AtmosData? _atmosData;
+  Map<String, RelayStatus> _relayStatuses = {};
 
   AtmosProvider(this._service);
 
   AtmosData? get atmosData => _atmosData;
+  RelayStatus? getRelayStatus(String device) => _relayStatuses[device];
 
   Future<void> fetchAtmosData() async {
     try {
@@ -24,10 +26,21 @@ class AtmosProvider with ChangeNotifier {
 
   Future<void> changeRelayStatus(String device) async {
     try {
-      await _service.changeRelayStatus(device);
+      final relayStatus = await _service.changeRelayStatus(device);
+      _relayStatuses[device] = relayStatus;
       await fetchAtmosData();
+      notifyListeners();
     } catch (e) {
       print('Error changing $device status: $e');
+    }
+  }
+
+  Future<List<AtmosData>> fetchAtmosHistory(String timeRange) async {
+    try {
+      return await _service.fetchAtmosHistory(timeRange);
+    } catch (e) {
+      print('Error fetching atmosphere history: $e');
+      rethrow;
     }
   }
 }

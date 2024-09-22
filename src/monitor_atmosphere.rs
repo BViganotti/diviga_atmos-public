@@ -76,6 +76,7 @@ async fn handle_fridge(
         let time_since_last_activation = now - sd.fridge_turn_off_datetime();
         if time_since_last_activation
             >= Duration::from_secs(settings.temperature.fridge_cooldown_duration)
+            && settings.temperature.high_range().contains(&average_temp)
         {
             info!("fridge_control() -> activating fridge");
             change_relay_status(settings.relay_pins.fridge, RelayStatus::On)?;
@@ -106,13 +107,16 @@ async fn handle_dehumidifier(
     let time_since_last_activation = now - sd.dehumidifier_turn_off_datetime();
     if time_since_last_activation
         >= Duration::from_secs(settings.humidity.dehumidifier_cooldown_duration)
+        && settings.humidity.high_range().contains(&average_humidity)
     {
         info!("dehumidifier_control() -> activating dehumidifier");
         change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::On)?;
         sd.set_dehumidifier_status(RelayStatus::On);
         sd.set_dehumidifier_turn_on_datetime(now);
     } else {
-        info!("dehumidifier_control() -> activation prevented due to cooldown period");
+        info!(
+            "dehumidifier_control() -> activation prevented due to cooldown period or humidity level"
+        );
     }
     if !settings.humidity.high_range().contains(&average_humidity) {
         if sd.dehumidifier_status() == RelayStatus::On {

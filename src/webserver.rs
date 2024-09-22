@@ -1,4 +1,5 @@
 use crate::routes::atmosphere::get_atmosphere;
+use crate::routes::atmosphere::get_atmosphere_history;
 use crate::routes::get_full_atmospheric_data;
 use crate::routes::heartbeat::pulse;
 use crate::routes::relay_control::{
@@ -10,20 +11,31 @@ use crate::routes::relay_status::{
     get_ventilator_status,
 };
 use crate::AccessSharedData;
+use crate::Arc;
+use crate::Settings;
+use crate::SqliteClient;
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use log::info;
 
-pub fn run_app(sd: AccessSharedData) -> std::io::Result<Server> {
+pub fn run_app(
+    sd: AccessSharedData,
+    settings: Settings,
+    sqlite_client: Arc<SqliteClient>,
+) -> std::io::Result<Server> {
     info!("Starting HTTP server at http://localhost:8080");
     println!("starting HTTP server at http://localhost:8080");
     let common_data = web::Data::new(sd);
-
+    let common_settings = web::Data::new(settings);
+    let common_sqlite_client = web::Data::new(sqlite_client);
     let server = HttpServer::new(move || {
         App::new()
             .app_data(common_data.clone())
+            .app_data(common_settings.clone())
+            .app_data(common_sqlite_client)
             .service(get_atmosphere)
             .service(get_full_atmospheric_data)
+            .service(get_atmosphere_history)
             .service(pulse)
             .service(change_fridge_status)
             .service(change_humidifier_status)
