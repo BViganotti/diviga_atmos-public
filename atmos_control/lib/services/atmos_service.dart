@@ -119,4 +119,31 @@ class AtmosService {
       rethrow;
     }
   }
+
+  Future<Map<String, RelayStatus>> getAllStatuses() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/get_all_statuses'));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return {
+          'fridge': RelayStatus.fromJson({'status': jsonData['fridge_status']}),
+          'humidifier':
+              RelayStatus.fromJson({'status': jsonData['humidifier_status']}),
+          'dehumidifier':
+              RelayStatus.fromJson({'status': jsonData['dehumidifier_status']}),
+          'heater': RelayStatus.fromJson({'status': jsonData['heater_status']}),
+          'ventilator':
+              RelayStatus.fromJson({'status': jsonData['ventilator_status']}),
+        };
+      } else {
+        throw Exception('Failed to load statuses');
+      }
+    } catch (e) {
+      print('Error fetching all statuses: $e');
+      rethrow;
+    }
+  }
 }

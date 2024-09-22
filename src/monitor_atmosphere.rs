@@ -11,11 +11,14 @@ pub async fn monitor_atmosphere(
     sd: AccessSharedData,
     settings: Settings,
     sqlite_client: Arc<SqliteClient>,
+    mut shutdown_rx: tokio::sync::broadcast::Receiver<()>,
 ) -> Result<(), AtmosError> {
     let mut interval = interval(Duration::from_secs(settings.polling_interval.duration));
 
     loop {
-        interval.tick().await;
+        tokio::select! {
+            _ = interval.tick() => {
+                interval.tick().await;
 
         update_average_values(&sd);
         update_atmosphere_quality_index(&sd, &settings);
@@ -40,10 +43,15 @@ pub async fn monitor_atmosphere(
             debug!(
                 "Not enough polling iterations yet: {}",
                 sd.polling_iterations()
-            );
+                    );
+                }
+                log_atmosphere_data(&sd);
+            }
+            _ = shutdown_rx.recv() => {
+                info!("Received shutdown signal");
+                break Ok(());
+            }
         }
-
-        log_atmosphere_data(&sd);
     }
 }
 

@@ -25,22 +25,30 @@ class _AtmosGraphState extends State<AtmosGraph> {
     final atmosProvider = Provider.of<AtmosProvider>(context, listen: false);
     try {
       final data = await atmosProvider.fetchAtmosHistory(selectedTimeRange);
+      print('Raw data received: $data');
+
       setState(() {
         temperatureSpots = data.asMap().entries.map((entry) {
           final index = entry.key.toDouble();
           final item = entry.value;
+          print(
+              'Temperature data point: index=$index, value=${item.averageTemp}');
           return FlSpot(index, item.averageTemp);
         }).toList();
 
         humiditySpots = data.asMap().entries.map((entry) {
           final index = entry.key.toDouble();
           final item = entry.value;
+          print(
+              'Humidity data point: index=$index, value=${item.averageHumidity}');
           return FlSpot(index, item.averageHumidity);
         }).toList();
       });
+
+      print('Processed temperature spots: $temperatureSpots');
+      print('Processed humidity spots: $humiditySpots');
     } catch (e) {
       print('Error fetching atmosphere data: $e');
-      // You might want to show an error message to the user here
     }
   }
 
@@ -73,29 +81,43 @@ class _AtmosGraphState extends State<AtmosGraph> {
               height: 200,
               child: LineChart(
                 LineChartData(
+                  minY: 0,
+                  maxY: 100,
                   gridData: const FlGridData(show: false),
                   titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    bottomTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(
+                    leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          return Text('${value.toStringAsFixed(0)}°',
-                              style: const TextStyle(fontSize: 10));
+                          return Text('${value.toStringAsFixed(0)}°C',
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.red));
                         },
                         reservedSize: 30,
                       ),
                     ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text('${value.toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.blue));
+                        },
+                        reservedSize: 30,
+                      ),
+                    ),
+                    bottomTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: temperatureSpots,
+                      spots: temperatureSpots
+                          .map((spot) => FlSpot(spot.x, spot.y * 2.5))
+                          .toList(),
                       isCurved: true,
                       color: Colors.red,
                       barWidth: 3,
@@ -115,12 +137,12 @@ class _AtmosGraphState extends State<AtmosGraph> {
               ),
             ),
             const SizedBox(height: 8),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _LegendItem(color: Colors.red, label: 'Temperature'),
-                SizedBox(width: 16),
-                _LegendItem(color: Colors.blue, label: 'Humidity'),
+                _LegendItem(color: Colors.red, label: 'Temperature (°C)'),
+                const SizedBox(width: 16),
+                _LegendItem(color: Colors.blue, label: 'Humidity (%)'),
               ],
             ),
           ],

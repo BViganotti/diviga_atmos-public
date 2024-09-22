@@ -19,7 +19,7 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AtmosProvider>(context, listen: false).fetchAtmosData();
+      Provider.of<AtmosProvider>(context, listen: false).fetchAllData();
     });
   }
 
@@ -37,7 +37,7 @@ class HomeScreenState extends State<HomeScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           return RefreshIndicator(
-            onRefresh: () => atmosProvider.fetchAtmosData(),
+            onRefresh: () => atmosProvider.fetchAllData(),
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [

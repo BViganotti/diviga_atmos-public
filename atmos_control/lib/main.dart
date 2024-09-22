@@ -5,7 +5,13 @@ import 'services/atmos_service.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) =>
+          AtmosProvider(AtmosService('http://192.168.0.216:8080')),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -28,7 +34,7 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: const HomeScreen(),
+        home: HomeScreen(),
       ),
     );
   }

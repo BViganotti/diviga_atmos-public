@@ -10,25 +10,25 @@ class AtmosProvider with ChangeNotifier {
   AtmosProvider(this._service);
 
   AtmosData? get atmosData => _atmosData;
-  RelayStatus? getRelayStatus(String device) => _relayStatuses[device];
+  Map<String, RelayStatus> get relayStatuses => _relayStatuses;
 
-  Future<void> fetchAtmosData() async {
+  Future<void> fetchAllData() async {
     try {
       _atmosData = await _service.getAtmosData();
+      _relayStatuses = await _service.getAllStatuses();
       notifyListeners();
     } catch (e) {
-      print('Error fetching atmos data: $e');
-      // Optionally, you can set an error state here
-      // _error = e.toString();
-      notifyListeners();
+      print('Error fetching all data: $e');
     }
   }
+
+  RelayStatus? getRelayStatus(String device) => _relayStatuses[device];
 
   Future<void> changeRelayStatus(String device) async {
     try {
       final relayStatus = await _service.changeRelayStatus(device);
       _relayStatuses[device] = relayStatus;
-      await fetchAtmosData();
+      await fetchAllData();
       notifyListeners();
     } catch (e) {
       print('Error changing $device status: $e');

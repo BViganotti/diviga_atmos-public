@@ -1,3 +1,4 @@
+use crate::Arc;
 use crate::{relay_ctrl::RelayStatus, sqlite_client::SqliteClient, AccessSharedData};
 use actix_web::{get, http::header::ContentType, web, web::Query, HttpResponse};
 use std::collections::HashMap;
@@ -78,16 +79,16 @@ pub async fn get_full_atmospheric_data(sd: web::Data<AccessSharedData>) -> HttpR
 
 #[get("/api/atmosphere/history")]
 pub async fn get_atmosphere_history(
-    sqlite_client: web::Data<SqliteClient>,
+    sqlite_client: web::Data<Arc<SqliteClient>>,
     query: Query<HashMap<String, String>>,
 ) -> HttpResponse {
     let default_range = "Today".to_string();
     let range = query.get("range").unwrap_or(&default_range);
     let limit = match range.as_str() {
-        "Today" => 24,
-        "Week" => 168,
-        "Month" => 720,
-        _ => 24,
+        "Today" => 24 * 6,
+        "Week" => 168 * 6,
+        "Month" => 720 * 6,
+        _ => 24 * 6,
     };
 
     match sqlite_client.read_atmosphere_data(limit) {

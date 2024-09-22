@@ -14,25 +14,26 @@ use crate::AccessSharedData;
 use crate::Arc;
 use crate::Settings;
 use crate::SqliteClient;
-use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use log::info;
 
-pub fn run_app(
+pub async fn run_app(
     sd: AccessSharedData,
     settings: Settings,
+    mut shutdown_rx: tokio::sync::broadcast::Receiver<()>,
     sqlite_client: Arc<SqliteClient>,
-) -> std::io::Result<Server> {
+) -> std::io::Result<()> {
     info!("Starting HTTP server at http://localhost:8080");
-    println!("starting HTTP server at http://localhost:8080");
+
     let common_data = web::Data::new(sd);
     let common_settings = web::Data::new(settings);
     let common_sqlite_client = web::Data::new(sqlite_client);
+
     let server = HttpServer::new(move || {
         App::new()
             .app_data(common_data.clone())
             .app_data(common_settings.clone())
-            .app_data(common_sqlite_client)
+            .app_data(common_sqlite_client.clone())
             .service(get_atmosphere)
             .service(get_full_atmospheric_data)
             .service(get_atmosphere_history)
@@ -50,5 +51,14 @@ pub fn run_app(
     .bind(("0.0.0.0", 8080))?
     .run();
 
-    Ok(server)
+    tokio::select! {
+        result = server => {
+            result?;
+            Ok(())
+        }
+        _ = shutdown_rx.recv() => {
+            println!("Webserver received shutdown signal");
+            Ok(())
+        }
+    }
 }
