@@ -16,15 +16,15 @@ use dotenv::dotenv;
 use relay_ctrl::RelayStatus;
 use std::sync::Arc;
 use std::sync::Mutex;
-mod influx_client;
+mod sqlite_client;
+use crate::error::AtmosError;
 use crate::initialization::{initialize_relay_pins, initialize_shared_data};
 use crate::request_atmosphere::request_atmosphere;
-use influx_client::InfluxClient;
-
+use sqlite_client::SqliteClient;
 use tokio;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), AtmosError> {
     dotenv().ok();
     env_logger::init();
     log::info!("Starting atmospheric control system");
@@ -41,28 +41,27 @@ async fn main() -> std::io::Result<()> {
         sd: Arc::new(Mutex::new(common_data)),
     };
 
-    let influx_client = InfluxClient::new(&settings.influxdb.host, &settings.influxdb.database);
+    let sqlite_client = Arc::new(SqliteClient::new(&settings.sqlite.db_name)?);
 
     // Clone for atmosphere request task
     let atmosphere_data = shared_data.clone();
     let atmosphere_settings = settings.clone();
-    let atmosphere_influx_client = influx_client.clone();
-
     let atmosphere_handle = tokio::spawn(async move {
-        request_atmosphere(
-            &atmosphere_data,
-            &atmosphere_settings,
-            &atmosphere_influx_client,
-        )
-        .await;
+        if let Err(e) = request_atmosphere(&atmosphere_data, &atmosphere_settings).await {
+            eprintln!("Atmosphere request task error: {:?}", e);
+        }
     });
 
     // Clone for atmosphere monitoring task
     let monitoring_data = shared_data.clone();
     let monitoring_settings = settings.clone();
     tokio::spawn(async move {
-        if let Err(e) =
-            monitor_atmosphere::monitor_atmosphere(monitoring_data, monitoring_settings).await
+        if let Err(e) = monitor_atmosphere::monitor_atmosphere(
+            monitoring_data,
+            monitoring_settings,
+            sqlite_client,
+        )
+        .await
         {
             log::error!("Atmosphere monitoring error: {}", e);
         }

@@ -9,11 +9,11 @@ pub struct Settings {
     pub temperature: TemperatureSettings,
     pub humidity: HumiditySettings,
     pub ventilation: VentilationSettings,
-    pub influxdb: InfluxDbSettings,
     pub relay_pins: RelayPinSettings,
     pub webserver: WebserverSettings,
     pub sensor_read_cooldown: SensorReadCooldownSettings,
     pub polling_interval: PollingIntervalSettings,
+    pub sqlite: SqliteSettings,
     //pub email: EmailConfig,
 }
 
@@ -144,8 +144,8 @@ impl fmt::Display for Settings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Temperature: {:?}\nHumidity: {:?}\nVentilation: {:?}\nInfluxDB: {:?}",
-            self.temperature, self.humidity, self.ventilation, self.influxdb
+            "Temperature: {:?}\nHumidity: {:?}\nVentilation: {:?}\nSQLite: {:?}",
+            self.temperature, self.humidity, self.ventilation, self.sqlite,
         )
     }
 }
@@ -170,6 +170,17 @@ pub struct SensorReadCooldownSettings {
 #[derive(Debug, Deserialize, Clone)]
 pub struct PollingIntervalSettings {
     pub duration: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SqliteSettings {
+    pub db_name: String,
+}
+
+impl fmt::Display for SqliteSettings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SQLite: {:?}", self)
+    }
 }
 
 //#[derive(Deserialize, Clone)]

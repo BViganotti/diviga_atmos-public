@@ -1,14 +1,16 @@
+use crate::sqlite_client::SqliteClient;
+use crate::Arc;
 use crate::{
     error::AtmosError, relay_ctrl::change_relay_status, AccessSharedData, RelayStatus, Settings,
 };
-use futures::future::join_all;
 use log::{debug, error, info};
 use time::OffsetDateTime;
+use tokio::task::JoinHandle;
 use tokio::time::{interval, Duration};
-
 pub async fn monitor_atmosphere(
     sd: AccessSharedData,
     settings: Settings,
+    sqlite_client: Arc<SqliteClient>,
 ) -> Result<(), AtmosError> {
     let mut interval = interval(Duration::from_secs(settings.polling_interval.duration));
 
@@ -21,20 +23,17 @@ pub async fn monitor_atmosphere(
         if sd.polling_iterations() > 4 {
             let now = OffsetDateTime::now_utc();
 
-            let handlers = vec![
-                handle_fridge(&sd, now, &settings),
-                handle_dehumidifier(&sd, now, &settings),
-                handle_humidifier(&sd, now, &settings),
-                handle_ventilator(&sd, now, &settings),
+            let handlers: Vec<JoinHandle<Result<(), AtmosError>>> = vec![
+                tokio::spawn(handle_fridge(sd.clone(), now, settings.clone())),
+                tokio::spawn(handle_dehumidifier(sd.clone(), now, settings.clone())),
+                tokio::spawn(handle_humidifier(sd.clone(), now, settings.clone())),
+                tokio::spawn(handle_ventilator(sd.clone(), now, settings.clone())),
+                tokio::spawn(insert_atmosphere_data(sd.clone(), sqlite_client.clone())),
             ];
 
-            let results = join_all(handlers).await;
-            match results {
-                Ok(_) => {
-                    info!("All device handlers completed successfully");
-                }
-                Err(e) => {
-                    error!("Error occurred while handling devices: {:?}", e);
+            for handler in handlers {
+                if let Err(e) = handler.await.expect("Task panicked") {
+                    handle_device_error(&e).await;
                 }
             }
         } else {
@@ -48,7 +47,7 @@ pub async fn monitor_atmosphere(
     }
 }
 
-/*async fn handle_device_errors(e: &AtmosError, email_config: &EmailConfig) {
+async fn handle_device_error(e: &AtmosError) {
     let (alert_type, details) = match e {
         AtmosError::FridgeError(details) => ("Fridge Error", details),
         AtmosError::DehumidifierError(details) => ("Dehumidifier Error", details),
@@ -64,18 +63,13 @@ pub async fn monitor_atmosphere(
         alert_type, details
     );
 
-    let (subject, body) = create_alert_message(alert_type, details);
-    if let Err(e) = send_email_notification(email_config, &subject, &body).await {
-        error!("Failed to send email notification: {}", e);
-    }
-
     // Implement any necessary recovery or fallback logic here
-}*/
+}
 
 async fn handle_fridge(
-    sd: &AccessSharedData,
+    sd: AccessSharedData,
     now: OffsetDateTime,
-    settings: &Settings,
+    settings: Settings,
 ) -> Result<(), AtmosError> {
     let average_temp = sd.average_temp();
     if settings.temperature.high_range().contains(&average_temp) {
@@ -104,9 +98,9 @@ async fn handle_fridge(
 }
 
 async fn handle_dehumidifier(
-    sd: &AccessSharedData,
+    sd: AccessSharedData,
     now: OffsetDateTime,
-    settings: &Settings,
+    settings: Settings,
 ) -> Result<(), AtmosError> {
     let average_humidity = sd.average_humidity();
     let time_since_last_activation = now - sd.dehumidifier_turn_off_datetime();
@@ -132,9 +126,9 @@ async fn handle_dehumidifier(
 }
 
 async fn handle_humidifier(
-    sd: &AccessSharedData,
+    sd: AccessSharedData,
     now: OffsetDateTime,
-    settings: &Settings,
+    settings: Settings,
 ) -> Result<(), AtmosError> {
     let average_humidity = sd.average_humidity();
     if settings.humidity.low_range().contains(&average_humidity) {
@@ -161,9 +155,9 @@ async fn handle_humidifier(
 }
 
 async fn handle_ventilator(
-    sd: &AccessSharedData,
+    sd: AccessSharedData,
     now: OffsetDateTime,
-    settings: &Settings,
+    settings: Settings,
 ) -> Result<(), AtmosError> {
     if sd.ventilator_status() == RelayStatus::Off {
         let time_since_last_activation = now - sd.ventilator_turn_off_datetime();
@@ -227,6 +221,23 @@ fn log_atmosphere_data(sd: &AccessSharedData) {
     );
 }
 
+async fn insert_atmosphere_data(
+    sd: AccessSharedData,
+    sqlite_client: Arc<SqliteClient>,
+) -> Result<(), AtmosError> {
+    let now = OffsetDateTime::now_utc();
+    sqlite_client.insert_atmosphere_data(
+        now,
+        sd.average_temp(),
+        sd.average_humidity(),
+        sd.fridge_status(),
+        sd.dehumidifier_status(),
+        sd.humidifier_status(),
+        sd.ventilator_status(),
+    )?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,7 +294,7 @@ mod tests {
 
         // Test when temperature is in high range
         sd.set_average_temp(26.0);
-        handle_fridge(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_fridge(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -293,7 +304,7 @@ mod tests {
 
         // Test when temperature is in ideal range
         sd.set_average_temp(22.0);
-        handle_fridge(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_fridge(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -312,7 +323,7 @@ mod tests {
 
         // Test when humidity is in high range
         sd.set_average_humidity(70.0);
-        handle_dehumidifier(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_dehumidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -322,7 +333,7 @@ mod tests {
 
         // Test when humidity is not in high range
         sd.set_average_humidity(50.0);
-        handle_dehumidifier(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_dehumidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -343,7 +354,7 @@ mod tests {
 
         // Test when humidity is in low range
         sd.set_average_humidity(30.0);
-        handle_humidifier(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_humidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -353,7 +364,7 @@ mod tests {
 
         // Test when humidity is not in low range
         sd.set_average_humidity(50.0);
-        handle_humidifier(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_humidifier(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -406,7 +417,7 @@ mod tests {
         settings.relay_pins.ventilator_or_heater = 4;
 
         // Test ventilator activation
-        handle_ventilator(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_ventilator(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(
@@ -417,7 +428,7 @@ mod tests {
 
         // Test ventilator not activating due to being already on
         sd.set_ventilator_status(RelayStatus::On);
-        handle_ventilator(&sd, OffsetDateTime::now_utc(), &settings)
+        handle_ventilator(sd.clone(), OffsetDateTime::now_utc(), settings.clone())
             .await
             .unwrap();
         assert_eq!(sd.ventilator_status(), RelayStatus::On);

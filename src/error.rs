@@ -1,4 +1,3 @@
-use influxdb::Error as InfluxDbError;
 use std::fmt;
 
 #[derive(Debug)]
@@ -9,7 +8,7 @@ pub enum AtmosError {
     GpioError(rppal::gpio::Error),
     SensorReadError(String),
     RelayControlError(String),
-    InfluxDbError(InfluxDbError),
+    SqliteError(rusqlite::Error),
     JsonParseError(String),
     HttpError(String),
     FridgeError(String),
@@ -18,6 +17,7 @@ pub enum AtmosError {
     VentilatorError(String),
     RelayError(String),
     SensorError(String),
+    TaskJoinError(String),
 }
 
 impl fmt::Display for AtmosError {
@@ -29,7 +29,7 @@ impl fmt::Display for AtmosError {
             AtmosError::GpioError(e) => write!(f, "GPIO error: {}", e),
             AtmosError::SensorReadError(e) => write!(f, "Sensor read error: {}", e),
             AtmosError::RelayControlError(e) => write!(f, "Relay control error: {}", e),
-            AtmosError::InfluxDbError(e) => write!(f, "InfluxDB error: {}", e),
+            AtmosError::SqliteError(e) => write!(f, "Sqlite error: {}", e),
             AtmosError::JsonParseError(e) => write!(f, "JSON parse error: {}", e),
             AtmosError::HttpError(e) => write!(f, "HTTP error: {}", e),
             AtmosError::FridgeError(e) => write!(f, "Fridge error: {}", e),
@@ -38,6 +38,7 @@ impl fmt::Display for AtmosError {
             AtmosError::VentilatorError(e) => write!(f, "Ventilator error: {}", e),
             AtmosError::RelayError(e) => write!(f, "Relay error: {}", e),
             AtmosError::SensorError(e) => write!(f, "Sensor error: {}", e),
+            AtmosError::TaskJoinError(e) => write!(f, "Task join error: {}", e),
         }
     }
 }
@@ -68,8 +69,14 @@ impl From<rppal::gpio::Error> for AtmosError {
     }
 }
 
-impl From<InfluxDbError> for AtmosError {
-    fn from(error: InfluxDbError) -> Self {
-        AtmosError::InfluxDbError(error)
+impl From<rusqlite::Error> for AtmosError {
+    fn from(err: rusqlite::Error) -> Self {
+        AtmosError::SqliteError(err)
+    }
+}
+
+impl From<tokio::task::JoinError> for AtmosError {
+    fn from(err: tokio::task::JoinError) -> Self {
+        AtmosError::TaskJoinError(err.to_string())
     }
 }

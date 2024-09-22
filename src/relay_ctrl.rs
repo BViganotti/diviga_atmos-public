@@ -1,10 +1,6 @@
 use crate::error::AtmosError;
-
-#[cfg(not(test))]
 use rppal::gpio::Gpio;
-
-#[cfg(test)]
-use crate::mock_relay_ctrl::{get_mock_relay_status, mock_change_relay_status};
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum RelayStatus {
@@ -12,7 +8,15 @@ pub enum RelayStatus {
     Off,
 }
 
-#[cfg(not(test))]
+impl fmt::Display for RelayStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RelayStatus::On => write!(f, "On"),
+            RelayStatus::Off => write!(f, "Off"),
+        }
+    }
+}
+
 pub async fn change_relay_status(pin: u8, status: RelayStatus) -> Result<(), AtmosError> {
     let gpio = Gpio::new()?;
     let mut pin = gpio.get(pin)?.into_output();
@@ -21,14 +25,4 @@ pub async fn change_relay_status(pin: u8, status: RelayStatus) -> Result<(), Atm
         RelayStatus::Off => pin.set_low(),
     }
     Ok(())
-}
-
-#[cfg(test)]
-pub async fn change_relay_status(pin: u8, status: RelayStatus) -> Result<(), AtmosError> {
-    mock_change_relay_status(pin, status).await
-}
-
-#[cfg(test)]
-pub fn get_relay_status(pin: u8) -> RelayStatus {
-    get_mock_relay_status(pin)
 }

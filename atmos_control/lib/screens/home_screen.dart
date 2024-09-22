@@ -5,11 +5,13 @@ import '../widgets/sensor_card.dart';
 import '../widgets/relay_card.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState(); // Changed to HomeScreenState
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> { // Changed to HomeScreenState
   @override
   void initState() {
     super.initState();

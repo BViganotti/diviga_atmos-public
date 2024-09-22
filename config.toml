@@ -22,9 +22,8 @@ dehumidifier_cooldown_duration = 60
 interval = 1800
 duration = 60
 
-[influxdb]
-host = "http://localhost:8086"
-database = "atmosphere_db"
+[sqlite]
+db_name = "atmosphere_db"
 
 [relay_pins]
 humidifier = 14

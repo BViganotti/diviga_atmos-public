@@ -1,5 +1,4 @@
 use crate::error::AtmosError;
-use crate::influx_client::InfluxClient;
 use crate::shared_data::AccessSharedData;
 use log::info;
 use serde_json::Value;
@@ -16,10 +15,7 @@ fn get_atmosphere_from_sensor() -> Result<String, AtmosError> {
     Ok(str_output)
 }
 
-pub async fn read_atmosphere_from_sensors(
-    sd: &AccessSharedData,
-    influx_client: &InfluxClient,
-) -> Result<(), AtmosError> {
+pub async fn read_atmosphere_from_sensors(sd: &AccessSharedData) -> Result<(), AtmosError> {
     const MAX_RETRIES: u8 = 10;
     let mut current_tries: u8 = 0;
     let mut output = get_atmosphere_from_sensor()?;
@@ -64,14 +60,6 @@ pub async fn read_atmosphere_from_sensors(
     sd.set_temp_two(t2);
     sd.set_humidity_two(h2);
     sd.set_last_reading_datetime(now);
-
-    // Write data to InfluxDB
-    influx_client
-        .write_atmosphere_data("sensor1", t1, h1)
-        .await?;
-    influx_client
-        .write_atmosphere_data("sensor2", t2, h2)
-        .await?;
 
     Ok(())
 }
