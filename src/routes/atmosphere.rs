@@ -1,5 +1,6 @@
-use crate::{relay_ctrl::RelayStatus, AccessSharedData};
-use actix_web::{get, http::header::ContentType, web, HttpResponse};
+use crate::{relay_ctrl::RelayStatus, sqlite_client::SqliteClient, AccessSharedData};
+use actix_web::{get, http::header::ContentType, web, web::Query, HttpResponse};
+use std::collections::HashMap;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct AvgAtmosphereData {
@@ -73,4 +74,26 @@ pub async fn get_full_atmospheric_data(sd: web::Data<AccessSharedData>) -> HttpR
     HttpResponse::Ok()
         .content_type(ContentType::json())
         .body(values)
+}
+
+#[get("/api/atmosphere/history")]
+pub async fn get_atmosphere_history(
+    sqlite_client: web::Data<SqliteClient>,
+    query: Query<HashMap<String, String>>,
+) -> HttpResponse {
+    let default_range = "Today".to_string();
+    let range = query.get("range").unwrap_or(&default_range);
+    let limit = match range.as_str() {
+        "Today" => 24,
+        "Week" => 168,
+        "Month" => 720,
+        _ => 24,
+    };
+
+    match sqlite_client.read_atmosphere_data(limit) {
+        Ok(json_data) => HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(json_data),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
 }

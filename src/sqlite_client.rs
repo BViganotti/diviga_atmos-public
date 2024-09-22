@@ -1,6 +1,7 @@
 use crate::error::AtmosError;
 use crate::relay_ctrl::RelayStatus;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Connection, Result, Row};
+use serde_json::json;
 use std::sync::{Arc, Mutex};
 use time::OffsetDateTime;
 
@@ -64,5 +65,29 @@ impl SqliteClient {
             ],
         )?;
         Ok(())
+    }
+
+    pub fn read_atmosphere_data(&self, limit: usize) -> Result<String, AtmosError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT timestamp, average_temperature, average_humidity, 
+             fridge_status, dehumidifier_status, humidifier_status, ventilator_status 
+             FROM atmosphere_data ORDER BY timestamp DESC LIMIT ?",
+        )?;
+
+        let rows = stmt.query_map([limit], |row: &Row| {
+            Ok(json!({
+                "timestamp": row.get::<_, String>(0)?,
+                "average_temperature": row.get::<_, f32>(1)?,
+                "average_humidity": row.get::<_, f32>(2)?,
+                "fridge_status": row.get::<_, String>(3)?,
+                "dehumidifier_status": row.get::<_, String>(4)?,
+                "humidifier_status": row.get::<_, String>(5)?,
+                "ventilator_status": row.get::<_, String>(6)?,
+            }))
+        })?;
+
+        let data: Vec<serde_json::Value> = rows.collect::<Result<_, _>>()?;
+        Ok(serde_json::to_string(&data)?)
     }
 }

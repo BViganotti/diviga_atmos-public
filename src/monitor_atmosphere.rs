@@ -78,7 +78,7 @@ async fn handle_fridge(
             >= Duration::from_secs(settings.temperature.fridge_cooldown_duration)
         {
             info!("fridge_control() -> activating fridge");
-            change_relay_status(settings.relay_pins.fridge, RelayStatus::On).await?;
+            change_relay_status(settings.relay_pins.fridge, RelayStatus::On)?;
             sd.set_fridge_status(RelayStatus::On);
             sd.set_fridge_turn_on_datetime(now);
         } else {
@@ -89,7 +89,7 @@ async fn handle_fridge(
     {
         if sd.fridge_status() == RelayStatus::On {
             info!("fridge_control() -> deactivating fridge");
-            change_relay_status(settings.relay_pins.fridge, RelayStatus::Off).await?;
+            change_relay_status(settings.relay_pins.fridge, RelayStatus::Off)?;
             sd.set_fridge_status(RelayStatus::Off);
             sd.set_fridge_turn_off_datetime(now);
         }
@@ -108,7 +108,7 @@ async fn handle_dehumidifier(
         >= Duration::from_secs(settings.humidity.dehumidifier_cooldown_duration)
     {
         info!("dehumidifier_control() -> activating dehumidifier");
-        change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::On).await?;
+        change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::On)?;
         sd.set_dehumidifier_status(RelayStatus::On);
         sd.set_dehumidifier_turn_on_datetime(now);
     } else {
@@ -117,7 +117,7 @@ async fn handle_dehumidifier(
     if !settings.humidity.high_range().contains(&average_humidity) {
         if sd.dehumidifier_status() == RelayStatus::On {
             info!("dehumidifier_control() -> deactivating dehumidifier");
-            change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::Off).await?;
+            change_relay_status(settings.relay_pins.dehumidifier, RelayStatus::Off)?;
             sd.set_dehumidifier_status(RelayStatus::Off);
             sd.set_dehumidifier_turn_off_datetime(now);
         }
@@ -140,12 +140,12 @@ async fn handle_humidifier(
                 "humidifier_control() -> activating humidifier for {} second(s)",
                 settings.humidity.humidifier_activation_duration
             );
-            change_relay_status(settings.relay_pins.humidifier, RelayStatus::On).await?;
+            change_relay_status(settings.relay_pins.humidifier, RelayStatus::On)?;
             tokio::time::sleep(Duration::from_secs(
                 settings.humidity.humidifier_activation_duration,
             ))
             .await;
-            change_relay_status(settings.relay_pins.humidifier, RelayStatus::Off).await?;
+            change_relay_status(settings.relay_pins.humidifier, RelayStatus::Off)?;
             sd.set_humidifier_turn_off_datetime(now);
         } else {
             info!("humidifier_control() -> activation prevented due to cooldown period");
@@ -166,14 +166,14 @@ async fn handle_ventilator(
                 "ventilator_control() -> activating ventilator for {} second(s)",
                 settings.ventilation.duration
             );
-            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::On).await?;
+            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::On)?;
             sd.set_ventilator_status(RelayStatus::On);
             sd.set_ventilator_turn_on_datetime(now);
 
             tokio::time::sleep(Duration::from_secs(settings.ventilation.duration)).await;
 
             info!("ventilator_control() -> deactivating ventilator");
-            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::Off).await?;
+            change_relay_status(settings.relay_pins.ventilator_or_heater, RelayStatus::Off)?;
             sd.set_ventilator_status(RelayStatus::Off);
             sd.set_ventilator_turn_off_datetime(now);
         } else {

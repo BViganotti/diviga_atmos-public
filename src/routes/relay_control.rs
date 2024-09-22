@@ -26,7 +26,7 @@ pub async fn change_fridge_status(
         RelayStatus::On
     };
 
-    let response = match change_relay_status(settings.relay_pins.fridge, new_status).await {
+    let response = match change_relay_status(settings.relay_pins.fridge, new_status) {
         Ok(_) => {
             let now = OffsetDateTime::now_utc();
             sd.set_fridge_status(new_status);
@@ -63,7 +63,7 @@ pub async fn change_humidifier_status(
         RelayStatus::On
     };
 
-    let response = match change_relay_status(settings.relay_pins.humidifier, new_status).await {
+    let response = match change_relay_status(settings.relay_pins.humidifier, new_status) {
         Ok(_) => {
             let now = OffsetDateTime::now_utc();
             sd.set_humidifier_status(new_status);
@@ -100,7 +100,7 @@ pub async fn change_dehumidifier_status(
         RelayStatus::On
     };
 
-    let response = match change_relay_status(settings.relay_pins.dehumidifier, new_status).await {
+    let response = match change_relay_status(settings.relay_pins.dehumidifier, new_status) {
         Ok(_) => {
             let now = OffsetDateTime::now_utc();
             sd.set_dehumidifier_status(new_status);
@@ -137,20 +137,19 @@ pub async fn change_ventilator_status(
         RelayStatus::On
     };
 
-    let response =
-        match change_relay_status(settings.relay_pins.ventilator_or_heater, new_status).await {
-            Ok(_) => {
-                let now = OffsetDateTime::now_utc();
-                sd.set_ventilator_status(new_status);
-                if new_status == RelayStatus::On {
-                    sd.set_ventilator_turn_on_datetime(now);
-                } else {
-                    sd.set_ventilator_turn_off_datetime(now);
-                }
-                format!("Ventilator turned {:?}", new_status)
+    let response = match change_relay_status(settings.relay_pins.ventilator_or_heater, new_status) {
+        Ok(_) => {
+            let now = OffsetDateTime::now_utc();
+            sd.set_ventilator_status(new_status);
+            if new_status == RelayStatus::On {
+                sd.set_ventilator_turn_on_datetime(now);
+            } else {
+                sd.set_ventilator_turn_off_datetime(now);
             }
-            Err(e) => format!("Error changing ventilator status: {}", e),
-        };
+            format!("Ventilator turned {:?}", new_status)
+        }
+        Err(e) => format!("Error changing ventilator status: {}", e),
+    };
 
     let relay_response = RelayResponse {
         previous_status: prev_status,

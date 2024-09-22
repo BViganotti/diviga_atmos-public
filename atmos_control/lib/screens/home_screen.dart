@@ -3,15 +3,18 @@ import 'package:provider/provider.dart';
 import '../providers/atmos_provider.dart';
 import '../widgets/sensor_card.dart';
 import '../widgets/relay_card.dart';
+import '../graph/atmos_graph.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  HomeScreenState createState() => HomeScreenState(); // Changed to HomeScreenState
+  HomeScreenState createState() =>
+      HomeScreenState(); // Changed to HomeScreenState
 }
 
-class HomeScreenState extends State<HomeScreen> { // Changed to HomeScreenState
+class HomeScreenState extends State<HomeScreen> {
+  // Changed to HomeScreenState
   @override
   void initState() {
     super.initState();
@@ -102,6 +105,7 @@ class HomeScreenState extends State<HomeScreen> { // Changed to HomeScreenState
                   style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
+                const AtmosphereGraph(),
               ],
             ),
           );
