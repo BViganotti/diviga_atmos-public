@@ -137,11 +137,11 @@ class _AtmosGraphState extends State<AtmosGraph> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _LegendItem(color: Colors.red, label: 'Temperature (°C)'),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 _LegendItem(color: Colors.blue, label: 'Humidity (%)'),
               ],
             ),
